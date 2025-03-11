@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: fastcs-jungfrau
+  title: fastcs-jungfrau
+  description: Jungfrau control system integration with FastCS
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:sscc
