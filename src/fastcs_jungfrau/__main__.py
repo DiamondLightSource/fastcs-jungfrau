@@ -1,24 +1,71 @@
 """Interface for ``python -m fastcs_jungfrau``."""
 
-from argparse import ArgumentParser
-from collections.abc import Sequence
+from pathlib import Path
+from typing import Optional
 
-from . import __version__
+import typer
+from fastcs.launch import FastCS
+from fastcs.transport.epics.options import (
+    EpicsGUIOptions,
+    EpicsIOCOptions,
+    EpicsOptions,
+)
+
+# from slsdet import Jungfrau
+from fastcs_jungfrau import __version__
+from fastcs_jungfrau.jungfrau_controller import JungfrauController
 
 __all__ = ["main"]
 
+app = typer.Typer()
 
-def main(args: Sequence[str] | None = None) -> None:
-    """Argument parser for the CLI."""
-    parser = ArgumentParser()
-    parser.add_argument(
-        "-v",
+OPI_PATH = Path("/epics/opi")
+
+
+def version_callback(value: bool):
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    # TODO: typer does not support `bool | None` yet
+    # https://github.com/tiangolo/typer/issues/533
+    version: Optional[bool] = typer.Option(  # noqa
+        None,
         "--version",
-        action="version",
-        version=__version__,
+        callback=version_callback,
+        is_eager=True,
+        help="Print the version and exit",
+    ),
+):
+    pass
+
+
+@app.command()
+def ioc(pv_prefix: str = typer.Argument()):
+    ui_path = OPI_PATH if OPI_PATH.is_dir() else Path.cwd()
+
+    # Create a controller instance...
+    controller = JungfrauController()
+
+    # ...some IOC options...
+    options = EpicsOptions(
+        ioc=EpicsIOCOptions(pv_prefix=pv_prefix),
+        gui=EpicsGUIOptions(
+            output_path=ui_path / "jungfrau.bob", title=f"Jungfrau - {pv_prefix}"
+        ),
     )
-    parser.parse_args(args)
+
+    # ...and pass them both to FastCS
+    launcher = FastCS(controller, options)
+    launcher.create_docs()
+    launcher.create_gui()
+    launcher.run()
 
 
+# Run with 'python -m fastcs_jungfrau'
+# (after activating the venv)
 if __name__ == "__main__":
-    main()
+    app()
