@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Jungfrau IOC",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "fastcs_jungfrau",
+            "justMyCode": false,
+            "console": "integratedTerminal",
+            "args": [
+                "ioc",
+                "LAB29-JUNGFRAU"
+            ]
+        },
+        {
             "name": "Debug Unit Test",
             "type": "debugpy",
             "request": "launch",
