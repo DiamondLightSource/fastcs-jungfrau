@@ -1,7 +1,35 @@
-from fastcs.attributes import AttrR
-from fastcs.controller import Controller
-from fastcs.datatypes import Int
+from dataclasses import dataclass
+from typing import Any
+
+from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
+from fastcs.controller import BaseController, Controller
+from fastcs.datatypes import Float, String
+
+# from fastcs.wrappers import command
 from slsdet import Jungfrau
+
+
+@dataclass
+class JungfrauHandler(AttrHandlerRW):
+    command_name: str
+    update_period: float | None = 0.2
+
+    async def update(self, attr: AttrR):
+        await attr.set(attr.dtype(getattr(self.controller.detector, self.command_name)))
+
+    async def put(self, attr: AttrW, value: Any):
+        setattr(self.controller.detector, self.command_name, value)
+
+    async def initialise(self, controller: BaseController):
+        assert isinstance(controller, JungfrauController)
+        self._controller = controller
+
+    @property
+    def controller(self) -> "JungfrauController":
+        if self._controller is None:
+            raise RuntimeError("Handler not initialised")
+
+        return self._controller
 
 
 class JungfrauController(Controller):
@@ -12,28 +40,26 @@ class JungfrauController(Controller):
     Sets up all connections to send and receive information
     """
 
+    firmware_version = AttrR(String(), handler=JungfrauHandler("firmwareversion"))
+    detector_server_version = AttrR(
+        String(), handler=JungfrauHandler("detectorserverversion")
+    )
+    hardware_version = AttrR(String(), handler=JungfrauHandler("hardwareversion"))
+    kernel_version = AttrR(String(), handler=JungfrauHandler("kernelversion"))
+    client_version = AttrR(String(), handler=JungfrauHandler("clientversion"))
+    receiver_version = AttrR(String(), handler=JungfrauHandler("rx_version"))
+    serial_number = AttrR(String(), handler=JungfrauHandler("serialnumber"))
+    receiver_thread_ids = AttrR(String(), handler=JungfrauHandler("rx_threads"))
+    dynamic_range = AttrR(String(), handler=JungfrauHandler("dr"))
+    exposure_time = AttrRW(Float(), handler=JungfrauHandler("exptime"))
+
     def __init__(self) -> None:
-        JungfrauController.number = AttrR(Int())
         # Create a Jungfrau detector object
         # and initialise it with a config file
-        # self.detector = Jungfrau()
-        # self.detector.config = "/workspaces/jungfrau_2_modules.config"
-
-        props = self.read_properties(Jungfrau)
-
-        for prop_name, methods in props.items():
-            setattr(JungfrauController, prop_name, AttrR(Int()))
-            print(f"Property: {prop_name}")
-            print(f"  Getter: {methods['getter']}")
-            print(f"  Setter: {methods['setter']}")
+        self.detector = Jungfrau()
+        self.detector.config = "/workspaces/jungfrau_2_modules.config"
 
         super().__init__()
 
-    # Function to read out properties
-    def read_properties(self, cls):
-        properties = {}
-        for attr_name in dir(cls):
-            attr = getattr(cls, attr_name)
-            if isinstance(attr, property):
-                properties[attr_name] = {"getter": attr.fget, "setter": attr.fset}
-        return properties
+    # @command(group="Power")
+    # def turn_on(self) -> None:
