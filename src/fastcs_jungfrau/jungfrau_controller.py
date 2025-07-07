@@ -4,6 +4,7 @@ from typing import Any
 from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
 from fastcs.controller import BaseController, Controller
 from fastcs.datatypes import Float, Int, String
+from fastcs.wrappers import command
 from slsdet import Jungfrau
 
 
@@ -77,5 +78,26 @@ class JungfrauController(Controller):
 
         super().__init__()
 
-    # @command(group="Power")
-    # def turn_on(self) -> None:
+    @command()
+    async def start_acquisition(self) -> None:
+        self.detector.start()
+
+    @command()
+    async def stop_acquisition(self) -> None:
+        self.detector.stop()
+        # If acquisition was aborted during the acquire
+        # command, clear the acquiring flag in shared
+        # memory ready for starting the next acquisition
+        self.detector.clearbusy()
+
+    # Starts receiver listener for detector data packets
+    # and creates a data file (if file write is enabled)
+    @command()
+    async def start_receiver(self) -> None:
+        self.detector.rx_start()
+
+    # Stops receiver listener for detector data packets
+    # and closes current data file (if file write is enabled)
+    @command()
+    async def stop_receiver(self) -> None:
+        self.detector.rx_stop()
