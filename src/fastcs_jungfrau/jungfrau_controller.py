@@ -3,9 +3,7 @@ from typing import Any
 
 from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
 from fastcs.controller import BaseController, Controller
-from fastcs.datatypes import Float, String
-
-# from fastcs.wrappers import command
+from fastcs.datatypes import Float, Int, String
 from slsdet import Jungfrau
 
 
@@ -44,14 +42,27 @@ class JungfrauController(Controller):
     detector_server_version = AttrR(
         String(), handler=JungfrauHandler("detectorserverversion")
     )
+    # Read Only Attributes
     hardware_version = AttrR(String(), handler=JungfrauHandler("hardwareversion"))
     kernel_version = AttrR(String(), handler=JungfrauHandler("kernelversion"))
     client_version = AttrR(String(), handler=JungfrauHandler("clientversion"))
     receiver_version = AttrR(String(), handler=JungfrauHandler("rx_version"))
-    serial_number = AttrR(String(), handler=JungfrauHandler("serialnumber"))
-    receiver_thread_ids = AttrR(String(), handler=JungfrauHandler("rx_threads"))
     dynamic_range = AttrR(String(), handler=JungfrauHandler("dr"))
+    frames_left = AttrR(String(), handler=JungfrauHandler("framesl"))
+    temperatures = AttrR(String(), handler=JungfrauHandler("tempvalues"))
+    module_geometry = AttrR(String(), handler=JungfrauHandler("module_geometry"))
+    module_size = AttrR(String(), handler=JungfrauHandler("module_size"))
+    detector_size = AttrR(String(), handler=JungfrauHandler("detsize"))
+    status = AttrR(String(), handler=JungfrauHandler("status"))
+    # Read/Write Attributes
     exposure_time = AttrRW(Float(), handler=JungfrauHandler("exptime"))
+    period_between_frames = AttrRW(Float(), handler=JungfrauHandler("period"))
+    delay_after_trigger = AttrRW(Float(), handler=JungfrauHandler("delay"))
+    frames_per_acq = AttrRW(Int(), handler=JungfrauHandler("frames"))
+    temperature_threshold = AttrRW(Float(), handler=JungfrauHandler("temp_threshold"))
+    temperature_event = AttrRW(Int(), handler=JungfrauHandler("temp_event"))
+    high_voltage = AttrRW(Int(), handler=JungfrauHandler("highvoltage"))
+    power_chip = AttrRW(Int(), handler=JungfrauHandler("powerchip"))
 
     def __init__(self) -> None:
         # Create a Jungfrau detector object
