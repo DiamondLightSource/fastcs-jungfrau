@@ -1,11 +1,12 @@
+import enum
 from dataclasses import dataclass
 from typing import Any
 
 from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
 from fastcs.controller import BaseController, Controller
-from fastcs.datatypes import Float, Int, String
+from fastcs.datatypes import Enum, Float, Int, String
 from fastcs.wrappers import command
-from slsdet import Jungfrau
+from slsdet import Jungfrau, pedestalParameters
 
 
 @dataclass
@@ -29,6 +30,29 @@ class JungfrauHandler(AttrHandlerRW):
             raise RuntimeError("Handler not initialised")
 
         return self._controller
+
+
+class OnOffEnum(enum.StrEnum):
+    Off = "0"
+    On = "1"
+
+
+class PedestalModeHandler(JungfrauHandler):
+    async def update(self, attr: AttrR):
+        pedestal_mode_state = getattr(self.controller.detector, self.command_name)
+
+        if pedestal_mode_state.enable:
+            await attr.set(OnOffEnum.On)
+        else:
+            await attr.set(OnOffEnum.Off)
+
+    async def put(self, attr: AttrW, value: Any):
+        pedestal_params = pedestalParameters()
+
+        pedestal_params.frames = self._controller.pedestal_frames.get()
+        pedestal_params.loops = self._controller.pedestal_loops.get()
+        pedestal_params.enable = int(value)
+        setattr(self.controller.detector, self.command_name, pedestal_params)
 
 
 class JungfrauController(Controller):
@@ -64,6 +88,9 @@ class JungfrauController(Controller):
     temperature_event = AttrRW(Int(), handler=JungfrauHandler("temp_event"))
     high_voltage = AttrRW(Int(), handler=JungfrauHandler("highvoltage"))
     power_chip = AttrRW(Int(), handler=JungfrauHandler("powerchip"))
+    pedestal_frames = AttrRW(Int())
+    pedestal_loops = AttrRW(Int())
+    pedestal_mode = AttrRW(Enum(OnOffEnum), handler=PedestalModeHandler("pedestalmode"))
 
     def __init__(self) -> None:
         # Create a Jungfrau detector object
