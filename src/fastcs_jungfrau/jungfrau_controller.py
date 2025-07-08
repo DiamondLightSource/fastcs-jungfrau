@@ -49,8 +49,8 @@ class PedestalModeHandler(JungfrauHandler):
     async def put(self, attr: AttrW, value: Any):
         pedestal_params = pedestalParameters()
 
-        pedestal_params.frames = self._controller.pedestal_frames.get()
-        pedestal_params.loops = self._controller.pedestal_loops.get()
+        pedestal_params.frames = self._controller.pedestal_mode_frames.get()
+        pedestal_params.loops = self._controller.pedestal_mode_loops.get()
         pedestal_params.enable = int(value)
         setattr(self.controller.detector, self.command_name, pedestal_params)
 
@@ -63,34 +63,78 @@ class JungfrauController(Controller):
     Sets up all connections to send and receive information
     """
 
-    firmware_version = AttrR(String(), handler=JungfrauHandler("firmwareversion"))
+    # Group Constants
+    HARDWARE_DETAILS = "HardwareDetails"
+    SOFTWARE_DETAILS = "SoftwareDetails"
+    PEDESTAL_MODE = "PedestalMode"
+    ACQUISITION_PARAMETERS = "AcquisitionParameters"
+    TEMPERATURE = "Temperature"
+    STATUS = "Status"
+    POWER = "Power"
+
+    firmware_version = AttrR(
+        String(), handler=JungfrauHandler("firmwareversion"), group=SOFTWARE_DETAILS
+    )
     detector_server_version = AttrR(
-        String(), handler=JungfrauHandler("detectorserverversion")
+        String(),
+        handler=JungfrauHandler("detectorserverversion"),
+        group=SOFTWARE_DETAILS,
     )
     # Read Only Attributes
-    hardware_version = AttrR(String(), handler=JungfrauHandler("hardwareversion"))
-    kernel_version = AttrR(String(), handler=JungfrauHandler("kernelversion"))
-    client_version = AttrR(String(), handler=JungfrauHandler("clientversion"))
-    receiver_version = AttrR(String(), handler=JungfrauHandler("rx_version"))
-    dynamic_range = AttrR(String(), handler=JungfrauHandler("dr"))
-    frames_left = AttrR(String(), handler=JungfrauHandler("framesl"))
-    temperatures = AttrR(String(), handler=JungfrauHandler("tempvalues"))
-    module_geometry = AttrR(String(), handler=JungfrauHandler("module_geometry"))
-    module_size = AttrR(String(), handler=JungfrauHandler("module_size"))
-    detector_size = AttrR(String(), handler=JungfrauHandler("detsize"))
-    status = AttrR(String(), handler=JungfrauHandler("status"))
+    hardware_version = AttrR(
+        String(), handler=JungfrauHandler("hardwareversion"), group=HARDWARE_DETAILS
+    )
+    kernel_version = AttrR(
+        String(), handler=JungfrauHandler("kernelversion"), group=SOFTWARE_DETAILS
+    )
+    client_version = AttrR(
+        String(), handler=JungfrauHandler("clientversion"), group=SOFTWARE_DETAILS
+    )
+    receiver_version = AttrR(
+        String(), handler=JungfrauHandler("rx_version"), group=SOFTWARE_DETAILS
+    )
+    frames_left = AttrR(String(), handler=JungfrauHandler("framesl"), group=STATUS)
+    temperatures = AttrR(
+        String(), handler=JungfrauHandler("tempvalues"), group=TEMPERATURE
+    )
+    module_geometry = AttrR(
+        String(), handler=JungfrauHandler("module_geometry"), group=HARDWARE_DETAILS
+    )
+    module_size = AttrR(
+        String(), handler=JungfrauHandler("module_size"), group=HARDWARE_DETAILS
+    )
+    detector_size = AttrR(
+        String(), handler=JungfrauHandler("detsize"), group=HARDWARE_DETAILS
+    )
+    status = AttrR(String(), handler=JungfrauHandler("status"), group=STATUS)
     # Read/Write Attributes
-    exposure_time = AttrRW(Float(), handler=JungfrauHandler("exptime"))
-    period_between_frames = AttrRW(Float(), handler=JungfrauHandler("period"))
-    delay_after_trigger = AttrRW(Float(), handler=JungfrauHandler("delay"))
-    frames_per_acq = AttrRW(Int(), handler=JungfrauHandler("frames"))
-    temperature_threshold = AttrRW(Float(), handler=JungfrauHandler("temp_threshold"))
-    temperature_event = AttrRW(Int(), handler=JungfrauHandler("temp_event"))
-    high_voltage = AttrRW(Int(), handler=JungfrauHandler("highvoltage"))
-    power_chip = AttrRW(Int(), handler=JungfrauHandler("powerchip"))
-    pedestal_frames = AttrRW(Int())
-    pedestal_loops = AttrRW(Int())
-    pedestal_mode = AttrRW(Enum(OnOffEnum), handler=PedestalModeHandler("pedestalmode"))
+    exposure_time = AttrRW(
+        Float(), handler=JungfrauHandler("exptime"), group=ACQUISITION_PARAMETERS
+    )
+    period_between_frames = AttrRW(
+        Float(), handler=JungfrauHandler("period"), group=ACQUISITION_PARAMETERS
+    )
+    delay_after_trigger = AttrRW(
+        Float(), handler=JungfrauHandler("delay"), group=ACQUISITION_PARAMETERS
+    )
+    frames_per_acq = AttrRW(
+        Int(), handler=JungfrauHandler("frames"), group=ACQUISITION_PARAMETERS
+    )
+    temperature_threshold = AttrRW(
+        Float(), handler=JungfrauHandler("temp_threshold"), group=TEMPERATURE
+    )
+    temperature_event = AttrRW(
+        Int(), handler=JungfrauHandler("temp_event"), group=TEMPERATURE
+    )
+    high_voltage = AttrRW(Int(), handler=JungfrauHandler("highvoltage"), group=POWER)
+    power_chip = AttrRW(Int(), handler=JungfrauHandler("powerchip"), group=POWER)
+    pedestal_mode_frames = AttrRW(Int(), group=PEDESTAL_MODE)
+    pedestal_mode_loops = AttrRW(Int(), group=PEDESTAL_MODE)
+    pedestal_mode_control = AttrRW(
+        Enum(OnOffEnum),
+        handler=PedestalModeHandler("pedestalmode"),
+        group=PEDESTAL_MODE,
+    )
 
     def __init__(self) -> None:
         # Create a Jungfrau detector object
