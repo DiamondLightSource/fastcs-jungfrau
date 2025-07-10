@@ -32,6 +32,26 @@ class JungfrauHandler(AttrHandlerRW):
         return self._controller
 
 
+class PedestalParamHandler(JungfrauHandler):
+    # Pedestal frames and loops are not stored
+    # as individually accessible detector parameters
+    # so there is nothing to update from
+    update_period = None
+    command_name = ""
+
+    async def update(self, attr: AttrR):
+        pass
+
+    async def put(self, attr: AttrW, value: Any):
+        # Update the GUI
+        if isinstance(attr, AttrRW):
+            await attr.set(value)
+        # Trigger a put of the current pedestal mode so that the frames and
+        # loops parameters are updated even if the mode is currently enabled
+        pedestal_mode_state = self._controller.pedestal_mode_control.get()
+        await self._controller.pedestal_mode_control.process(pedestal_mode_state)
+
+
 class OnOffEnum(enum.StrEnum):
     Off = "0"
     On = "1"
@@ -141,8 +161,12 @@ class JungfrauController(Controller):
     )
     high_voltage = AttrRW(Int(), handler=JungfrauHandler("highvoltage"), group=POWER)
     power_chip = AttrRW(Int(), handler=JungfrauHandler("powerchip"), group=POWER)
-    pedestal_mode_frames = AttrRW(Int(), group=PEDESTAL_MODE)
-    pedestal_mode_loops = AttrRW(Int(), group=PEDESTAL_MODE)
+    pedestal_mode_frames = AttrRW(
+        Int(), handler=PedestalParamHandler(""), group=PEDESTAL_MODE
+    )
+    pedestal_mode_loops = AttrRW(
+        Int(), handler=PedestalParamHandler(""), group=PEDESTAL_MODE
+    )
     pedestal_mode_control = AttrRW(
         Enum(OnOffEnum),
         handler=PedestalModeHandler("pedestalmode"),
