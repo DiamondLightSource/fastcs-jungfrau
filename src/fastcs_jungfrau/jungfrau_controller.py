@@ -5,7 +5,7 @@ from typing import Any
 from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
 from fastcs.controller import BaseController, Controller
 from fastcs.datatypes import Enum, Float, Int, String
-from fastcs.wrappers import command
+from fastcs.wrappers import command, scan
 from slsdet import Jungfrau, pedestalParameters
 
 
@@ -83,7 +83,7 @@ class TemperatureHandler(JungfrauHandler):
         super().__init__(f"{key} {index}")
 
     async def update(self, attr):
-        temperature_dict: dict = self.controller.detector.tempvalues
+        temperature_dict: dict = self.controller.tempvalues
         temperature = temperature_dict[self.key][self.index]
         await attr.set(str(temperature))
 
@@ -127,9 +127,6 @@ class JungfrauController(Controller):
         String(), handler=JungfrauHandler("rx_version"), group=SOFTWARE_DETAILS
     )
     frames_left = AttrR(String(), handler=JungfrauHandler("framesl"), group=STATUS)
-    temperatures = AttrR(
-        String(), handler=JungfrauHandler("tempvalues"), group=TEMPERATURE
-    )
     module_geometry = AttrR(
         String(), handler=JungfrauHandler("module_geometry"), group=HARDWARE_DETAILS
     )
@@ -206,6 +203,10 @@ class JungfrauController(Controller):
                     handler=TemperatureHandler(module_index, key),
                     group=group_name,
                 )
+
+    @scan(0.2)
+    async def update_temperatures(self):
+        self.tempvalues = self.detector.tempvalues
 
     @command()
     async def start_acquisition(self) -> None:
