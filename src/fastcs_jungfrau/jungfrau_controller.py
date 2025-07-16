@@ -32,6 +32,15 @@ class JungfrauHandler(AttrHandlerRW):
         return self._controller
 
 
+class StatusHandler(JungfrauHandler):
+    async def update(self, attr):
+        status_enum = getattr(self.controller.detector, self.command_name)
+        # Extract the part after the dot
+        status = str(status_enum).split(".")[-1]
+        # Convert to title case (e.g., "IDLE" -> "Idle")
+        await attr.set(status.capitalize())
+
+
 class PedestalParamHandler(JungfrauHandler):
     # Pedestal frames and loops are not stored
     # as individually accessible detector parameters
@@ -127,16 +136,7 @@ class JungfrauController(Controller):
         String(), handler=JungfrauHandler("rx_version"), group=SOFTWARE_DETAILS
     )
     frames_left = AttrR(String(), handler=JungfrauHandler("framesl"), group=STATUS)
-    module_geometry = AttrR(
-        String(), handler=JungfrauHandler("module_geometry"), group=HARDWARE_DETAILS
-    )
-    module_size = AttrR(
-        String(), handler=JungfrauHandler("module_size"), group=HARDWARE_DETAILS
-    )
-    detector_size = AttrR(
-        String(), handler=JungfrauHandler("detsize"), group=HARDWARE_DETAILS
-    )
-    status = AttrR(String(), handler=JungfrauHandler("status"), group=STATUS)
+    detector_status = AttrR(String(), handler=StatusHandler("status"), group=STATUS)
     # Read/Write Attributes
     exposure_time = AttrRW(
         Float(), handler=JungfrauHandler("exptime"), group=ACQUISITION_PARAMETERS
