@@ -233,15 +233,3 @@ class JungfrauController(Controller):
         # command, clear the acquiring flag in shared
         # memory ready for starting the next acquisition
         self.detector.clearbusy()
-
-    # Starts receiver listener for detector data packets
-    # and creates a data file (if file write is enabled)
-    @command()
-    async def start_receiver(self) -> None:
-        self.detector.rx_start()
-
-    # Stops receiver listener for detector data packets
-    # and closes current data file (if file write is enabled)
-    @command()
-    async def stop_receiver(self) -> None:
-        self.detector.rx_stop()
