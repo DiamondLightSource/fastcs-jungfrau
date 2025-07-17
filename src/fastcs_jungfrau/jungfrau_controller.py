@@ -136,6 +136,9 @@ class JungfrauController(Controller):
         String(), handler=JungfrauHandler("rx_version"), group=SOFTWARE_DETAILS
     )
     frames_left = AttrR(String(), handler=JungfrauHandler("framesl"), group=STATUS)
+    module_geometry = AttrR(String(), group=HARDWARE_DETAILS)
+    module_size = AttrR(String(), group=HARDWARE_DETAILS)
+    detector_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_status = AttrR(String(), handler=StatusHandler("status"), group=STATUS)
     # Read/Write Attributes
     exposure_time = AttrRW(
@@ -203,6 +206,17 @@ class JungfrauController(Controller):
                     handler=TemperatureHandler(module_index, key),
                     group=group_name,
                 )
+
+    # Once initialisation is complete, fetch the module and detector geometry
+    async def connect(self):
+        detector_size = self.detector.detsize
+        module_size = self.detector.module_size
+        module_geometry = self.detector.module_geometry
+        await self.detector_size.set(f"{detector_size.x} by {detector_size.y}")
+        await self.module_geometry.set(
+            f"{module_geometry.x} wide by {module_geometry.y} high"
+        )
+        await self.module_size.set(f"{module_size[0]} by {module_size[1]}")
 
     @scan(0.2)
     async def update_temperatures(self):
