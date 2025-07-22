@@ -4,7 +4,7 @@ from typing import Any
 
 from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
 from fastcs.controller import BaseController, Controller
-from fastcs.datatypes import Enum, Float, Int, String
+from fastcs.datatypes import Bool, Enum, Float, Int, String
 from fastcs.wrappers import command, scan
 from slsdet import Jungfrau, pedestalParameters
 
@@ -171,6 +171,9 @@ class JungfrauController(Controller):
         Int(units="V"),
         handler=JungfrauHandler("highvoltage"),
         group=POWER,
+    )
+    power_chip_power_state = AttrRW(
+        Bool(), handler=JungfrauHandler("powerchip"), group=POWER
     )
     pedestal_mode_frames = AttrRW(
         Int(), handler=PedestalParamHandler(""), group=PEDESTAL_MODE
