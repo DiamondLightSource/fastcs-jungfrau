@@ -94,7 +94,7 @@ class TemperatureHandler(JungfrauHandler):
     async def update(self, attr):
         temperature_dict: dict = self.controller.tempvalues
         temperature = temperature_dict[self.key][self.index]
-        await attr.set(str(temperature))
+        await attr.set(f"{temperature} \u00b0C")
 
 
 class JungfrauController(Controller):
@@ -142,25 +142,36 @@ class JungfrauController(Controller):
     detector_status = AttrR(String(), handler=StatusHandler("status"), group=STATUS)
     # Read/Write Attributes
     exposure_time = AttrRW(
-        Float(), handler=JungfrauHandler("exptime"), group=ACQUISITION_PARAMETERS
+        Float(units="s", prec=3),
+        handler=JungfrauHandler("exptime"),
+        group=ACQUISITION_PARAMETERS,
     )
     period_between_frames = AttrRW(
-        Float(), handler=JungfrauHandler("period"), group=ACQUISITION_PARAMETERS
+        Float(units="s", prec=3),
+        handler=JungfrauHandler("period"),
+        group=ACQUISITION_PARAMETERS,
     )
     delay_after_trigger = AttrRW(
-        Float(), handler=JungfrauHandler("delay"), group=ACQUISITION_PARAMETERS
+        Float(units="s", prec=3),
+        handler=JungfrauHandler("delay"),
+        group=ACQUISITION_PARAMETERS,
     )
     frames_per_acq = AttrRW(
         Int(), handler=JungfrauHandler("frames"), group=ACQUISITION_PARAMETERS
     )
     temperature_threshold = AttrRW(
-        Float(), handler=JungfrauHandler("temp_threshold"), group=TEMPERATURE
+        Float(units="\u00b0C", prec=0),
+        handler=JungfrauHandler("temp_threshold"),
+        group=TEMPERATURE,
     )
     temperature_event = AttrRW(
         Int(), handler=JungfrauHandler("temp_event"), group=TEMPERATURE
     )
-    high_voltage = AttrRW(Int(), handler=JungfrauHandler("highvoltage"), group=POWER)
-    power_chip = AttrRW(Int(), handler=JungfrauHandler("powerchip"), group=POWER)
+    high_voltage = AttrRW(
+        Int(units="V"),
+        handler=JungfrauHandler("highvoltage"),
+        group=POWER,
+    )
     pedestal_mode_frames = AttrRW(
         Int(), handler=PedestalParamHandler(""), group=PEDESTAL_MODE
     )
