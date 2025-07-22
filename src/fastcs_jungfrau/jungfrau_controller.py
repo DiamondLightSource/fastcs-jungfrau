@@ -57,8 +57,8 @@ class PedestalParamHandler(JungfrauHandler):
             await attr.set(value)
         # Trigger a put of the current pedestal mode so that the frames and
         # loops parameters are updated even if the mode is currently enabled
-        pedestal_mode_state = self._controller.pedestal_mode_control.get()
-        await self._controller.pedestal_mode_control.process(pedestal_mode_state)
+        pedestal_mode_state = self._controller.pedestal_mode_state.get()
+        await self._controller.pedestal_mode_state.process(pedestal_mode_state)
 
 
 class OnOffEnum(enum.StrEnum):
@@ -178,7 +178,7 @@ class JungfrauController(Controller):
     pedestal_mode_loops = AttrRW(
         Int(), handler=PedestalParamHandler(""), group=PEDESTAL_MODE
     )
-    pedestal_mode_control = AttrRW(
+    pedestal_mode_state = AttrRW(
         Enum(OnOffEnum),
         handler=PedestalModeHandler("pedestalmode"),
         group=PEDESTAL_MODE,
