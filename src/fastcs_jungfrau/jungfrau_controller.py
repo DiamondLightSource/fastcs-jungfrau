@@ -109,7 +109,7 @@ class JungfrauController(Controller):
     HARDWARE_DETAILS = "HardwareDetails"
     SOFTWARE_DETAILS = "SoftwareDetails"
     PEDESTAL_MODE = "PedestalMode"
-    ACQUISITION_PARAMETERS = "AcquisitionParameters"
+    ACQUISITION = "Acquisition"
     TEMPERATURE = "Temperature"
     STATUS = "Status"
     POWER = "Power"
@@ -144,21 +144,19 @@ class JungfrauController(Controller):
     exposure_time = AttrRW(
         Float(units="s", prec=3),
         handler=JungfrauHandler("exptime"),
-        group=ACQUISITION_PARAMETERS,
+        group=ACQUISITION,
     )
     period_between_frames = AttrRW(
         Float(units="s", prec=3),
         handler=JungfrauHandler("period"),
-        group=ACQUISITION_PARAMETERS,
+        group=ACQUISITION,
     )
     delay_after_trigger = AttrRW(
         Float(units="s", prec=3),
         handler=JungfrauHandler("delay"),
-        group=ACQUISITION_PARAMETERS,
+        group=ACQUISITION,
     )
-    frames_per_acq = AttrRW(
-        Int(), handler=JungfrauHandler("frames"), group=ACQUISITION_PARAMETERS
-    )
+    frames_per_acq = AttrRW(Int(), handler=JungfrauHandler("frames"), group=ACQUISITION)
     temperature_threshold = AttrRW(
         Float(units="\u00b0C", prec=0),
         handler=JungfrauHandler("temp_threshold"),
@@ -236,12 +234,12 @@ class JungfrauController(Controller):
     async def update_temperatures(self):
         self.tempvalues = self.detector.tempvalues
 
-    @command()
-    async def start_acquisition(self) -> None:
+    @command(group=ACQUISITION)
+    async def acquisition_start(self) -> None:
         self.detector.start()
 
-    @command()
-    async def stop_acquisition(self) -> None:
+    @command(group=ACQUISITION)
+    async def acquisition_stop(self) -> None:
         self.detector.stop()
         # If acquisition was aborted during the acquire
         # command, clear the acquiring flag in shared
