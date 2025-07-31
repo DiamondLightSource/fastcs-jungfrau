@@ -72,6 +72,21 @@ class OnOffEnum(enum.StrEnum):
     On = "1"
 
 
+class DetectorStatus(enum.StrEnum):
+    IDLE = "IDLE"
+    ERROR = "ERROR"
+    WAITING = "WAITING"
+    RUN_FINISHED = "RUN_FINISHED"
+    TRANSMITTING = "TRANSMITTING"
+    RUNNING = "RUNNING"
+    STOPPED = "STOPPED"
+
+
+class TriggerMode(enum.StrEnum):
+    EXTERNAL = "TRIGGER_EXPOSURE"
+    AUTO = "AUTO_TIMING"
+
+
 class PedestalModeHandler(JungfrauHandler):
     async def update(self, attr: AttrR):
         pedestal_mode_state = getattr(self.controller.detector, self.command_name)
@@ -149,6 +164,9 @@ class JungfrauController(Controller):
     temperature_over_heat_event = AttrR(
         Bool(), handler=TempEventReadHandler("temp_event"), group=TEMPERATURE
     )
+
+    bit_depth = AttrR(Int(), handler=JungfrauHandler("dr"), group=ACQUISITION)
+
     # Read/Write Attributes
     exposure_time = AttrRW(
         Float(units="s", prec=3),
@@ -189,6 +207,9 @@ class JungfrauController(Controller):
         Enum(OnOffEnum),
         handler=PedestalModeHandler("pedestalmode"),
         group=PEDESTAL_MODE,
+    )
+    trigger_mode = AttrRW(
+        Enum(TriggerMode), handler=JungfrauHandler("timing"), group=ACQUISITION
     )
 
     def __init__(self) -> None:
