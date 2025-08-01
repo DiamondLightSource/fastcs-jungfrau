@@ -146,7 +146,7 @@ class JungfrauController(Controller):
     module_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_status = AttrR(String(), handler=StatusHandler("status"), group=STATUS)
-    temperature_event = AttrR(
+    temperature_over_heat_event = AttrR(
         Bool(), handler=TempEventReadHandler("temp_event"), group=TEMPERATURE
     )
     # Read/Write Attributes
@@ -166,7 +166,7 @@ class JungfrauController(Controller):
         group=ACQUISITION,
     )
     frames_per_acq = AttrRW(Int(), handler=JungfrauHandler("frames"), group=ACQUISITION)
-    temperature_threshold = AttrRW(
+    temperature_over_heat_threshold = AttrRW(
         Int(units="\u00b0C"),
         handler=JungfrauHandler("temp_threshold"),
         group=TEMPERATURE,
@@ -237,8 +237,8 @@ class JungfrauController(Controller):
         await self.module_size.set(f"{module_size[0]} by {module_size[1]}")
 
     @command(group=TEMPERATURE)
-    async def temperature_reset_event(self) -> None:
-        await self.temperature_event.set(False)
+    async def over_heat_reset(self) -> None:
+        await self.temperature_over_heat_event.set(False)
 
     @scan(0.2)
     async def update_temperatures(self):
