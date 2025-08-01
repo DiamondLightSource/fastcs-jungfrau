@@ -158,7 +158,7 @@ class JungfrauController(Controller):
     )
     frames_per_acq = AttrRW(Int(), handler=JungfrauHandler("frames"), group=ACQUISITION)
     temperature_threshold = AttrRW(
-        Float(units="\u00b0C", prec=0),
+        Int(units="\u00b0C"),
         handler=JungfrauHandler("temp_threshold"),
         group=TEMPERATURE,
     )
