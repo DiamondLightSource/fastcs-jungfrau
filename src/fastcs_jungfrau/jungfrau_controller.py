@@ -41,6 +41,12 @@ class StatusHandler(JungfrauHandler):
         await attr.set(status.capitalize())
 
 
+class TempEventReadHandler(JungfrauHandler):
+    async def update(self, attr):
+        temp_event = getattr(self.controller.detector, self.command_name)
+        await attr.set(bool(temp_event))
+
+
 class PedestalParamHandler(JungfrauHandler):
     # Pedestal frames and loops are not stored
     # as individually accessible detector parameters
@@ -140,6 +146,9 @@ class JungfrauController(Controller):
     module_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_status = AttrR(String(), handler=StatusHandler("status"), group=STATUS)
+    temperature_event = AttrR(
+        Bool(), handler=TempEventReadHandler("temp_event"), group=TEMPERATURE
+    )
     # Read/Write Attributes
     exposure_time = AttrRW(
         Float(units="s", prec=3),
@@ -161,9 +170,6 @@ class JungfrauController(Controller):
         Int(units="\u00b0C"),
         handler=JungfrauHandler("temp_threshold"),
         group=TEMPERATURE,
-    )
-    temperature_event = AttrRW(
-        Int(), handler=JungfrauHandler("temp_event"), group=TEMPERATURE
     )
     high_voltage = AttrRW(
         Int(units="V"),
@@ -229,6 +235,10 @@ class JungfrauController(Controller):
             f"{module_geometry.x} wide by {module_geometry.y} high"
         )
         await self.module_size.set(f"{module_size[0]} by {module_size[1]}")
+
+    @command(group=TEMPERATURE)
+    async def temperature_reset_event(self) -> None:
+        await self.temperature_event.set(False)
 
     @scan(0.2)
     async def update_temperatures(self):
