@@ -32,13 +32,29 @@ class JungfrauHandler(AttrHandlerRW):
         return self._controller
 
 
+# TODO combine these two classes, maybe need to refactor the dataclass above
+
+
 class StatusHandler(JungfrauHandler):
     async def update(self, attr):
-        status_enum = getattr(self.controller.detector, self.command_name)
-        # Extract the part after the dot
-        status = str(status_enum).split(".")[-1]
-        # Convert to title case (e.g., "IDLE" -> "Idle")
-        await attr.set(status.capitalize())
+        # Get the status enum from the slsdet package
+        status_enum: enum.IntEnum = getattr(self.controller.detector, self.command_name)
+
+        # Get value compatible with DetectorStatus
+        new_enum = DETECTOR_STATUS_MAPPING[status_enum.value]
+
+        await attr.set(new_enum.value)
+
+
+class TriggerModeHandler(JungfrauHandler):
+    async def update(self, attr):
+        # Get the status enum from the slsdet package
+        status_enum: enum.IntEnum = getattr(self.controller.detector, self.command_name)
+
+        # Get value compatible with TriggerMode
+        new_enum = TRIGGER_MODE_ENUM_MAPPING[status_enum.value]
+
+        await attr.set(new_enum.value)
 
 
 class TempEventReadHandler(JungfrauHandler):
@@ -67,24 +83,45 @@ class PedestalParamHandler(JungfrauHandler):
         await self._controller.pedestal_mode_state.process(pedestal_mode_state)
 
 
+# The keys for these enums correspond to the keys of the enums given by the slsdet
+# package. In our AttrHandlers, we use the keys to map to the new enums defined below
+
+
 class OnOffEnum(enum.StrEnum):
-    Off = "0"
-    On = "1"
+    OFF = "Off"
+    ON = "On"
 
 
 class DetectorStatus(enum.StrEnum):
-    IDLE = "IDLE"
-    ERROR = "ERROR"
-    WAITING = "WAITING"
-    RUN_FINISHED = "RUN_FINISHED"
-    TRANSMITTING = "TRANSMITTING"
-    RUNNING = "RUNNING"
-    STOPPED = "STOPPED"
+    IDLE = "Idle"
+    ERROR = "Error"
+    WAITING = "Waiting"
+    RUN_FINISHED = "Run Finished"
+    TRANSMITTING = "Transmitting"
+    RUNNING = "Running"
+    STOPPED = "Stopped"
 
 
 class TriggerMode(enum.StrEnum):
-    EXTERNAL = "TRIGGER_EXPOSURE"
-    AUTO = "AUTO_TIMING"
+    AUTO_TIMING = "Internal"
+    TRIGGER_EXPOSURE = "External"
+
+
+DETECTOR_STATUS_MAPPING = {
+    0: DetectorStatus.IDLE,
+    1: DetectorStatus.ERROR,
+    2: DetectorStatus.WAITING,
+    3: DetectorStatus.RUN_FINISHED,
+    4: DetectorStatus.TRANSMITTING,
+    5: DetectorStatus.RUNNING,
+    6: DetectorStatus.STOPPED,
+}
+
+
+TRIGGER_MODE_ENUM_MAPPING = {
+    0: TriggerMode.AUTO_TIMING,
+    1: TriggerMode.TRIGGER_EXPOSURE,
+}
 
 
 class PedestalModeHandler(JungfrauHandler):
@@ -92,9 +129,9 @@ class PedestalModeHandler(JungfrauHandler):
         pedestal_mode_state = getattr(self.controller.detector, self.command_name)
 
         if pedestal_mode_state.enable:
-            await attr.set(OnOffEnum.On)
+            await attr.set(OnOffEnum.ON)
         else:
-            await attr.set(OnOffEnum.Off)
+            await attr.set(OnOffEnum.OFF)
 
     async def put(self, attr: AttrW, value: Any):
         pedestal_params = pedestalParameters()
@@ -160,12 +197,17 @@ class JungfrauController(Controller):
     module_geometry = AttrR(String(), group=HARDWARE_DETAILS)
     module_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_size = AttrR(String(), group=HARDWARE_DETAILS)
-    detector_status = AttrR(String(), handler=StatusHandler("status"), group=STATUS)
+    detector_status = AttrR(
+        Enum(DetectorStatus), handler=StatusHandler("status"), group=STATUS
+    )
     temperature_over_heat_event = AttrR(
         Bool(), handler=TempEventReadHandler("temp_event"), group=TEMPERATURE
     )
 
     bit_depth = AttrR(Int(), handler=JungfrauHandler("dr"), group=ACQUISITION)
+    trigger_mode = AttrRW(
+        Enum(TriggerMode), handler=JungfrauHandler("timing"), group=ACQUISITION
+    )
 
     # Read/Write Attributes
     exposure_time = AttrRW(
@@ -209,7 +251,7 @@ class JungfrauController(Controller):
         group=PEDESTAL_MODE,
     )
     trigger_mode = AttrRW(
-        Enum(TriggerMode), handler=JungfrauHandler("timing"), group=ACQUISITION
+        Enum(TriggerMode), handler=TriggerModeHandler("timing"), group=ACQUISITION
     )
 
     def __init__(self) -> None:
