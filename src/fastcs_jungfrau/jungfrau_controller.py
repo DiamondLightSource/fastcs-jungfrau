@@ -12,6 +12,44 @@ TimingMode: enum.IntEnum = defs.timingMode
 RunStatus: enum.IntEnum = defs.runStatus
 
 
+class DetectorStatus(enum.StrEnum):
+    Idle = "Idle"
+    Error = "Error"
+    Waiting = "Waiting"
+    RunFinished = "Run Finished"
+    Transmitting = "Transmitting"
+    Running = "Running"
+    Stopped = "Stopped"
+
+
+class TriggerMode(enum.StrEnum):
+    Internal = "Internal"
+    External = "External"
+
+
+# Two-way mapping between enum values given by the slsdrivers to our own enums
+# These mappings use enums from the private slsdet package, so we can't get typing here
+
+TRIGGER_MODE_ENUM_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        TriggerMode.Internal: TimingMode.AUTO_TIMING,  # type: ignore
+        TriggerMode.External: TimingMode.TRIGGER_EXPOSURE,  # type: ignore
+    }
+)
+
+DETECTOR_STATUS_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        DetectorStatus.Idle: RunStatus.IDLE,  # type: ignore
+        DetectorStatus.Error: RunStatus.ERROR,  # type: ignore
+        DetectorStatus.Waiting: RunStatus.WAITING,  # type: ignore
+        DetectorStatus.RunFinished: RunStatus.RUN_FINISHED,  # type: ignore
+        DetectorStatus.Transmitting: RunStatus.TRANSMITTING,  # type: ignore
+        DetectorStatus.Running: RunStatus.RUNNING,  # type: ignore
+        DetectorStatus.Stopped: RunStatus.STOPPED,  # type: ignore
+    }
+)
+
+
 class JungfrauHandler(AttrHandlerRW):
     def __init__(self, command_name: str, update_period: float | None = 0.2):
         self.command_name = command_name
@@ -39,6 +77,21 @@ T = TypeVar(name="T", bound=enum.Enum)
 
 
 class EnumHandler(JungfrauHandler, Generic[T]):
+    """Handler for AttrRW using enums, to allow us to map slsdet enums to our own enums.
+
+    Args:
+    enum_mapping: A two-way mapping from a user-friendly StrEnum to the slsdet private
+    enum.
+
+    mapped_enum_type: The enum class which we are using for this attribute.
+
+    command_name: Name of the relevant slsdet detector property.
+
+    update_period: How often, in seconds, we update the attribute by reading from the
+    detector
+
+    """
+
     def __init__(
         self,
         enum_mapping: bidict[T, enum.IntEnum],
@@ -58,7 +111,6 @@ class EnumHandler(JungfrauHandler, Generic[T]):
     async def put(self, attr: AttrW, value: str):
         mapped_enum = self.mapped_enum_type(value)
         raw_enum = self.enum_mapping[mapped_enum]
-        print(f"putting value of {value}")
         setattr(self.controller.detector, self.command_name, raw_enum)
 
 
@@ -89,46 +141,8 @@ class PedestalParamHandler(JungfrauHandler):
 
 
 class OnOffEnum(enum.StrEnum):
-    OFF = "Off"
-    ON = "On"
-
-
-class DetectorStatus(enum.StrEnum):
-    IDLE = "Idle"
-    ERROR = "Error"
-    WAITING = "Waiting"
-    RUN_FINISHED = "Run Finished"
-    TRANSMITTING = "Transmitting"
-    RUNNING = "Running"
-    STOPPED = "Stopped"
-
-
-class TriggerMode(enum.StrEnum):
-    INTERNAL = "Internal"
-    EXTERNAL = "External"
-
-
-# Two-way mapping between enum values given by the slsdrivers to our own enums
-# These mappings use enums from the private slsdet package, so we can't get typing here
-
-TRIGGER_MODE_ENUM_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
-    {
-        TriggerMode.INTERNAL: TimingMode.AUTO_TIMING,  # type: ignore
-        TriggerMode.EXTERNAL: TimingMode.TRIGGER_EXPOSURE,  # type: ignore
-    }
-)
-
-DETECTOR_STATUS_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
-    {
-        DetectorStatus.IDLE: RunStatus.IDLE,  # type: ignore
-        DetectorStatus.ERROR: RunStatus.ERROR,  # type: ignore
-        DetectorStatus.WAITING: RunStatus.WAITING,  # type: ignore
-        DetectorStatus.RUN_FINISHED: RunStatus.RUN_FINISHED,  # type: ignore
-        DetectorStatus.TRANSMITTING: RunStatus.TRANSMITTING,  # type: ignore
-        DetectorStatus.RUNNING: RunStatus.RUNNING,  # type: ignore
-        DetectorStatus.STOPPED: RunStatus.STOPPED,  # type: ignore
-    }
-)
+    Off = "Off"
+    On = "On"
 
 
 class PedestalModeHandler(JungfrauHandler):
@@ -136,9 +150,9 @@ class PedestalModeHandler(JungfrauHandler):
         pedestal_mode_state = getattr(self.controller.detector, self.command_name)
 
         if pedestal_mode_state.enable:
-            await attr.set(OnOffEnum.ON)
+            await attr.set(OnOffEnum.On)
         else:
-            await attr.set(OnOffEnum.OFF)
+            await attr.set(OnOffEnum.Off)
 
     async def put(self, attr: AttrW, value: Any):
         pedestal_params = pedestalParameters()
