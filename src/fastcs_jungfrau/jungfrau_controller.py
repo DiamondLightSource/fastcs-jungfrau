@@ -1,18 +1,21 @@
 import enum
-from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generic, TypeVar
 
+from bidict import bidict
 from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
 from fastcs.controller import BaseController, Controller
 from fastcs.datatypes import Bool, Enum, Float, Int, String
 from fastcs.wrappers import command, scan
-from slsdet import Jungfrau, pedestalParameters
+from slsdet import Jungfrau, defs, pedestalParameters
+
+TimingMode: enum.IntEnum = defs.timingMode
+RunStatus: enum.IntEnum = defs.runStatus
 
 
-@dataclass
 class JungfrauHandler(AttrHandlerRW):
-    command_name: str
-    update_period: float | None = 0.2
+    def __init__(self, command_name: str, update_period: float | None = 0.2):
+        self.command_name = command_name
+        self.update_period = update_period
 
     async def update(self, attr: AttrR):
         await attr.set(attr.dtype(getattr(self.controller.detector, self.command_name)))
@@ -32,29 +35,31 @@ class JungfrauHandler(AttrHandlerRW):
         return self._controller
 
 
-# TODO combine these two classes, maybe need to refactor the dataclass above
+T = TypeVar(name="T", bound=enum.Enum)
 
 
-class StatusHandler(JungfrauHandler):
+class EnumHandler(JungfrauHandler, Generic[T]):
+    def __init__(
+        self,
+        enum_mapping: bidict[T, enum.IntEnum],
+        mapped_enum_type: type[T],
+        command_name: str,
+        update_period: float | None = 0.2,
+    ):
+        self.mapped_enum_type = mapped_enum_type
+        self.enum_mapping = enum_mapping
+        super().__init__(command_name, update_period)
+
     async def update(self, attr):
-        # Get the status enum from the slsdet package
-        status_enum: enum.IntEnum = getattr(self.controller.detector, self.command_name)
+        raw_enum: enum.IntEnum = getattr(self.controller.detector, self.command_name)
+        mapped_enum = self.enum_mapping.inverse[raw_enum]
+        await attr.set(mapped_enum)
 
-        # Get value compatible with DetectorStatus
-        new_enum = DETECTOR_STATUS_MAPPING[status_enum.value]
-
-        await attr.set(new_enum.value)
-
-
-class TriggerModeHandler(JungfrauHandler):
-    async def update(self, attr):
-        # Get the status enum from the slsdet package
-        status_enum: enum.IntEnum = getattr(self.controller.detector, self.command_name)
-
-        # Get value compatible with TriggerMode
-        new_enum = TRIGGER_MODE_ENUM_MAPPING[status_enum.value]
-
-        await attr.set(new_enum.value)
+    async def put(self, attr: AttrW, value: str):
+        mapped_enum = self.mapped_enum_type(value)
+        raw_enum = self.enum_mapping[mapped_enum]
+        print(f"putting value of {value}")
+        setattr(self.controller.detector, self.command_name, raw_enum)
 
 
 class TempEventReadHandler(JungfrauHandler):
@@ -83,10 +88,6 @@ class PedestalParamHandler(JungfrauHandler):
         await self._controller.pedestal_mode_state.process(pedestal_mode_state)
 
 
-# The keys for these enums correspond to the keys of the enums given by the slsdet
-# package. In our AttrHandlers, we use the keys to map to the new enums defined below
-
-
 class OnOffEnum(enum.StrEnum):
     OFF = "Off"
     ON = "On"
@@ -103,25 +104,31 @@ class DetectorStatus(enum.StrEnum):
 
 
 class TriggerMode(enum.StrEnum):
-    AUTO_TIMING = "Internal"
-    TRIGGER_EXPOSURE = "External"
+    INTERNAL = "Internal"
+    EXTERNAL = "External"
 
 
-DETECTOR_STATUS_MAPPING = {
-    0: DetectorStatus.IDLE,
-    1: DetectorStatus.ERROR,
-    2: DetectorStatus.WAITING,
-    3: DetectorStatus.RUN_FINISHED,
-    4: DetectorStatus.TRANSMITTING,
-    5: DetectorStatus.RUNNING,
-    6: DetectorStatus.STOPPED,
-}
+# Two-way mapping between enum values given by the slsdrivers to our own enums
+# These mappings use enums from the private slsdet package, so we can't get typing here
 
+TRIGGER_MODE_ENUM_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        TriggerMode.INTERNAL: TimingMode.AUTO_TIMING,  # type: ignore
+        TriggerMode.EXTERNAL: TimingMode.TRIGGER_EXPOSURE,  # type: ignore
+    }
+)
 
-TRIGGER_MODE_ENUM_MAPPING = {
-    0: TriggerMode.AUTO_TIMING,
-    1: TriggerMode.TRIGGER_EXPOSURE,
-}
+DETECTOR_STATUS_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        DetectorStatus.IDLE: RunStatus.IDLE,  # type: ignore
+        DetectorStatus.ERROR: RunStatus.ERROR,  # type: ignore
+        DetectorStatus.WAITING: RunStatus.WAITING,  # type: ignore
+        DetectorStatus.RUN_FINISHED: RunStatus.RUN_FINISHED,  # type: ignore
+        DetectorStatus.TRANSMITTING: RunStatus.TRANSMITTING,  # type: ignore
+        DetectorStatus.RUNNING: RunStatus.RUNNING,  # type: ignore
+        DetectorStatus.STOPPED: RunStatus.STOPPED,  # type: ignore
+    }
+)
 
 
 class PedestalModeHandler(JungfrauHandler):
@@ -198,7 +205,9 @@ class JungfrauController(Controller):
     module_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_status = AttrR(
-        Enum(DetectorStatus), handler=StatusHandler("status"), group=STATUS
+        Enum(DetectorStatus),
+        handler=EnumHandler(DETECTOR_STATUS_MAPPING, DetectorStatus, "status"),
+        group=STATUS,
     )
     temperature_over_heat_event = AttrR(
         Bool(), handler=TempEventReadHandler("temp_event"), group=TEMPERATURE
@@ -251,7 +260,9 @@ class JungfrauController(Controller):
         group=PEDESTAL_MODE,
     )
     trigger_mode = AttrRW(
-        Enum(TriggerMode), handler=TriggerModeHandler("timing"), group=ACQUISITION
+        Enum(TriggerMode),
+        handler=EnumHandler(TRIGGER_MODE_ENUM_MAPPING, TriggerMode, "timing"),
+        group=ACQUISITION,
     )
 
     def __init__(self) -> None:
