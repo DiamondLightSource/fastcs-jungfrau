@@ -238,7 +238,7 @@ class JungfrauController(Controller):
 
     @command(group=TEMPERATURE)
     async def over_heat_reset(self) -> None:
-        await self.temperature_over_heat_event.set(False)
+        self.detector.temp_event(0)
 
     @scan(0.2)
     async def update_temperatures(self):
