@@ -191,12 +191,12 @@ class JungfrauController(Controller):
         group=PEDESTAL_MODE,
     )
 
-    def __init__(self) -> None:
+    def __init__(self, config_file_path) -> None:
         # Create a Jungfrau detector object
         # and initialise it with a config file
         self.detector = Jungfrau()
         try:
-            self.detector.config = "/workspaces/jungfrau_2_modules.config"
+            self.detector.config = config_file_path
         except RuntimeError as e:
             if "ClientSocket" in str(e):
                 print("Jungfrau Receiver is not running")

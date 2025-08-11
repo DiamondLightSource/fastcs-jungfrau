@@ -44,11 +44,14 @@ def main(
 
 
 @app.command()
-def ioc(pv_prefix: str = typer.Argument()):
+def ioc(
+    pv_prefix: str = typer.Argument(),
+    config: str = typer.Option(help="Path to the config file"),
+):
     ui_path = OPI_PATH if OPI_PATH.is_dir() else Path.cwd()
 
     # Create a controller instance...
-    controller = JungfrauController()
+    controller = JungfrauController(config_file_path=config)
 
     # ...some IOC options...
     options = EpicsCAOptions(
