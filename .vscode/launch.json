@@ -13,7 +13,9 @@
             "console": "integratedTerminal",
             "args": [
                 "ioc",
-                "LAB29-JUNGFRAU"
+                "LAB29-JUNGFRAU",
+                "--config",
+                "/workspaces/jungfrau_2_modules.config",
             ]
         },
         {
