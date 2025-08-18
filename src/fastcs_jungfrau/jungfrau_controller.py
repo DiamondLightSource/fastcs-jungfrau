@@ -195,12 +195,7 @@ class JungfrauController(Controller):
         # Create a Jungfrau detector object
         # and initialise it with a config file
         self.detector = Jungfrau()
-        try:
-            self.detector.config = config_file_path
-        except RuntimeError as e:
-            if "ClientSocket" in str(e):
-                print("Jungfrau Receiver is not running")
-            exit()
+        self.detector.config = config_file_path
 
         super().__init__()
 
