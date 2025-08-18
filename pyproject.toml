@@ -31,7 +31,7 @@ dev = [
 ]
 
 [project.scripts]
-fastcs-jungfrau = "fastcs_jungfrau.__main__:main"
+fastcs-jungfrau = "fastcs_jungfrau.__main__:app"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/fastcs-jungfrau"
