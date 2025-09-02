@@ -10,6 +10,7 @@ from slsdet import Jungfrau, defs, pedestalParameters
 
 TimingMode: enum.IntEnum = defs.timingMode
 RunStatus: enum.IntEnum = defs.runStatus
+Gain: enum.IntEnum = defs.gainMode
 
 
 class DetectorStatus(enum.StrEnum):
@@ -25,6 +26,15 @@ class DetectorStatus(enum.StrEnum):
 class TriggerMode(enum.StrEnum):
     Internal = "Internal"
     External = "External"
+
+
+class GainMode(enum.StrEnum):
+    Dynamic = "Dynamic"
+    ForceSwitchG1 = "Force switch G1"
+    ForceSwitchG2 = "Force swith G2"
+    FixG1 = "Fix G1"
+    FixG2 = "Fix G2"
+    FixG0 = "Fix G0 (Use with caution!)"
 
 
 # Two-way mapping between enum values given by the slsdrivers to our own enums
@@ -46,6 +56,17 @@ DETECTOR_STATUS_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
         DetectorStatus.Transmitting: RunStatus.TRANSMITTING,  # type: ignore
         DetectorStatus.Running: RunStatus.RUNNING,  # type: ignore
         DetectorStatus.Stopped: RunStatus.STOPPED,  # type: ignore
+    }
+)
+
+GAIN_MODE_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        GainMode.Dynamic: Gain.DYNAMIC,  # type: ignore
+        GainMode.ForceSwitchG1: Gain.FORCE_SWITCH_G1,  # type: ignore
+        GainMode.ForceSwitchG2: Gain.FORCE_SWITCH_G2,  # type: ignore
+        GainMode.FixG1: Gain.FIX_G1,  # type: ignore
+        GainMode.FixG2: Gain.FIX_G2,  # type: ignore
+        GainMode.FixG0: Gain.FIX_G0,  # type: ignore
     }
 )
 
@@ -277,6 +298,9 @@ class JungfrauController(Controller):
         Enum(TriggerMode),
         handler=EnumHandler(TRIGGER_MODE_ENUM_MAPPING, TriggerMode, "timing"),
         group=ACQUISITION,
+    )
+    gain_mode = AttrRW(
+        Enum(GainMode), handler=EnumHandler(GAIN_MODE_MAPPING, GainMode, "gainmode")
     )
 
     def __init__(self) -> None:
