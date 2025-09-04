@@ -249,9 +249,6 @@ class JungfrauController(Controller):
     )
 
     bit_depth = AttrR(Int(), handler=JungfrauHandler("dr"), group=ACQUISITION)
-    trigger_mode = AttrRW(
-        Enum(TriggerMode), handler=JungfrauHandler("timing"), group=ACQUISITION
-    )
 
     # Read/Write Attributes
     exposure_time = AttrRW(
