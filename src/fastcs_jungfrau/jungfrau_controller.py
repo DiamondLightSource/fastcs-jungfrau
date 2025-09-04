@@ -300,16 +300,11 @@ class JungfrauController(Controller):
         Enum(GainMode), handler=EnumHandler(GAIN_MODE_MAPPING, GainMode, "gainmode")
     )
 
-    def __init__(self) -> None:
+    def __init__(self, config_file_path) -> None:
         # Create a Jungfrau detector object
         # and initialise it with a config file
         self.detector = Jungfrau()
-        try:
-            self.detector.config = "/workspaces/jungfrau_2_modules.config"
-        except RuntimeError as e:
-            if "ClientSocket" in str(e):
-                print("Jungfrau Receiver is not running")
-            exit()
+        self.detector.config = config_file_path
 
         super().__init__()
 
@@ -347,7 +342,7 @@ class JungfrauController(Controller):
 
     @command(group=TEMPERATURE)
     async def over_heat_reset(self) -> None:
-        await self.temperature_over_heat_event.set(False)
+        self.detector.temp_event(0)
 
     @scan(0.2)
     async def update_temperatures(self):
