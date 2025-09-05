@@ -297,7 +297,9 @@ class JungfrauController(Controller):
         group=ACQUISITION,
     )
     gain_mode = AttrRW(
-        Enum(GainMode), handler=EnumHandler(GAIN_MODE_MAPPING, GainMode, "gainmode")
+        Enum(GainMode),
+        handler=EnumHandler(GAIN_MODE_MAPPING, GainMode, "gainmode"),
+        group=ACQUISITION,
     )
 
     def __init__(self, config_file_path) -> None:
