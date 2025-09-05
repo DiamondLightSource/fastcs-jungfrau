@@ -1,18 +1,80 @@
 import enum
-from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generic, TypeVar
 
+from bidict import bidict
 from fastcs.attributes import AttrHandlerRW, AttrR, AttrRW, AttrW
 from fastcs.controller import BaseController, Controller
 from fastcs.datatypes import Bool, Enum, Float, Int, String
 from fastcs.wrappers import command, scan
-from slsdet import Jungfrau, pedestalParameters
+from slsdet import Jungfrau, defs, pedestalParameters
+
+TimingMode: enum.IntEnum = defs.timingMode
+RunStatus: enum.IntEnum = defs.runStatus
+Gain: enum.IntEnum = defs.gainMode
 
 
-@dataclass
+class DetectorStatus(enum.StrEnum):
+    Idle = "Idle"
+    Error = "Error"
+    Waiting = "Waiting"
+    RunFinished = "Run Finished"
+    Transmitting = "Transmitting"
+    Running = "Running"
+    Stopped = "Stopped"
+
+
+class TriggerMode(enum.StrEnum):
+    Internal = "Internal"
+    External = "External"
+
+
+class GainMode(enum.StrEnum):
+    Dynamic = "Dynamic"
+    ForceSwitchG1 = "Force switch G1"
+    ForceSwitchG2 = "Force swith G2"
+    FixG1 = "Fix G1"
+    FixG2 = "Fix G2"
+    FixG0 = "Fix G0 (Use with caution!)"
+
+
+# Two-way mapping between enum values given by the slsdrivers to our own enums
+# These mappings use enums from the private slsdet package, so we can't get typing here
+
+TRIGGER_MODE_ENUM_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        TriggerMode.Internal: TimingMode.AUTO_TIMING,  # type: ignore
+        TriggerMode.External: TimingMode.TRIGGER_EXPOSURE,  # type: ignore
+    }
+)
+
+DETECTOR_STATUS_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        DetectorStatus.Idle: RunStatus.IDLE,  # type: ignore
+        DetectorStatus.Error: RunStatus.ERROR,  # type: ignore
+        DetectorStatus.Waiting: RunStatus.WAITING,  # type: ignore
+        DetectorStatus.RunFinished: RunStatus.RUN_FINISHED,  # type: ignore
+        DetectorStatus.Transmitting: RunStatus.TRANSMITTING,  # type: ignore
+        DetectorStatus.Running: RunStatus.RUNNING,  # type: ignore
+        DetectorStatus.Stopped: RunStatus.STOPPED,  # type: ignore
+    }
+)
+
+GAIN_MODE_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
+    {
+        GainMode.Dynamic: Gain.DYNAMIC,  # type: ignore
+        GainMode.ForceSwitchG1: Gain.FORCE_SWITCH_G1,  # type: ignore
+        GainMode.ForceSwitchG2: Gain.FORCE_SWITCH_G2,  # type: ignore
+        GainMode.FixG1: Gain.FIX_G1,  # type: ignore
+        GainMode.FixG2: Gain.FIX_G2,  # type: ignore
+        GainMode.FixG0: Gain.FIX_G0,  # type: ignore
+    }
+)
+
+
 class JungfrauHandler(AttrHandlerRW):
-    command_name: str
-    update_period: float | None = 0.2
+    def __init__(self, command_name: str, update_period: float | None = 0.2):
+        self.command_name = command_name
+        self.update_period = update_period
 
     async def update(self, attr: AttrR):
         await attr.set(attr.dtype(getattr(self.controller.detector, self.command_name)))
@@ -32,13 +94,45 @@ class JungfrauHandler(AttrHandlerRW):
         return self._controller
 
 
-class StatusHandler(JungfrauHandler):
+T = TypeVar(name="T", bound=enum.Enum)
+
+
+class EnumHandler(JungfrauHandler, Generic[T]):
+    """Handler for AttrRW using enums, to allow us to map slsdet enums to our own enums.
+
+    Args:
+    enum_mapping: A two-way mapping from a user-friendly StrEnum to the slsdet private
+    enum.
+
+    mapped_enum_type: The enum class which we are using for this attribute.
+
+    command_name: Name of the relevant slsdet detector property.
+
+    update_period: How often, in seconds, we update the attribute by reading from the
+    detector
+
+    """
+
+    def __init__(
+        self,
+        enum_mapping: bidict[T, enum.IntEnum],
+        mapped_enum_type: type[T],
+        command_name: str,
+        update_period: float | None = 0.2,
+    ):
+        self.mapped_enum_type = mapped_enum_type
+        self.enum_mapping = enum_mapping
+        super().__init__(command_name, update_period)
+
     async def update(self, attr):
-        status_enum = getattr(self.controller.detector, self.command_name)
-        # Extract the part after the dot
-        status = str(status_enum).split(".")[-1]
-        # Convert to title case (e.g., "IDLE" -> "Idle")
-        await attr.set(status.capitalize())
+        raw_enum: enum.IntEnum = getattr(self.controller.detector, self.command_name)
+        mapped_enum = self.enum_mapping.inverse[raw_enum]
+        await attr.set(mapped_enum)
+
+    async def put(self, attr: AttrW, value: str):
+        mapped_enum = self.mapped_enum_type(value)
+        raw_enum = self.enum_mapping[mapped_enum]
+        setattr(self.controller.detector, self.command_name, raw_enum)
 
 
 class TempEventReadHandler(JungfrauHandler):
@@ -68,8 +162,8 @@ class PedestalParamHandler(JungfrauHandler):
 
 
 class OnOffEnum(enum.StrEnum):
-    Off = "0"
-    On = "1"
+    Off = "Off"
+    On = "On"
 
 
 class PedestalModeHandler(JungfrauHandler):
@@ -145,10 +239,17 @@ class JungfrauController(Controller):
     module_geometry = AttrR(String(), group=HARDWARE_DETAILS)
     module_size = AttrR(String(), group=HARDWARE_DETAILS)
     detector_size = AttrR(String(), group=HARDWARE_DETAILS)
-    detector_status = AttrR(String(), handler=StatusHandler("status"), group=STATUS)
+    detector_status = AttrR(
+        Enum(DetectorStatus),
+        handler=EnumHandler(DETECTOR_STATUS_MAPPING, DetectorStatus, "status"),
+        group=STATUS,
+    )
     temperature_over_heat_event = AttrR(
         Bool(), handler=TempEventReadHandler("temp_event"), group=TEMPERATURE
     )
+
+    bit_depth = AttrR(Int(), handler=JungfrauHandler("dr"), group=ACQUISITION)
+
     # Read/Write Attributes
     exposure_time = AttrRW(
         Float(units="s", prec=3),
@@ -189,6 +290,14 @@ class JungfrauController(Controller):
         Enum(OnOffEnum),
         handler=PedestalModeHandler("pedestalmode"),
         group=PEDESTAL_MODE,
+    )
+    trigger_mode = AttrRW(
+        Enum(TriggerMode),
+        handler=EnumHandler(TRIGGER_MODE_ENUM_MAPPING, TriggerMode, "timing"),
+        group=ACQUISITION,
+    )
+    gain_mode = AttrRW(
+        Enum(GainMode), handler=EnumHandler(GAIN_MODE_MAPPING, GainMode, "gainmode")
     )
 
     def __init__(self, config_file_path) -> None:
