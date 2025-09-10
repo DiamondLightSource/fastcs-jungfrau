@@ -185,15 +185,16 @@ class PedestalModeHandler(JungfrauHandler):
 
 
 class TemperatureHandler(JungfrauHandler):
-    def __init__(self, index: int, key: str):
-        self.index = index
-        self.key = key
+    def __init__(self, module_index: int, temperature_index: str):
+        self.module_index = module_index
+        self.temperature_index = temperature_index
 
-        super().__init__(f"{key} {index}")
+        super().__init__(f"{temperature_index} {module_index}")
 
     async def update(self, attr):
-        temperature_dict: dict = self.controller.tempvalues
-        temperature = temperature_dict[self.key][self.index]
+        temperature = self.controller.detector.getTemperature(self.temperature_index)[
+            self.module_index
+        ]
         await attr.set(f"{temperature} \u00b0C")
 
 
@@ -311,23 +312,23 @@ class JungfrauController(Controller):
         super().__init__()
 
     async def initialise(self):
-        # Get the dictionary of temperatures
-        temperature_dict = self.detector.tempvalues
+        # Get the list of temperatures
+        temperature_list = self.detector.getTemperatureList()
 
         # Determine the number of modules
         module_geometry = self.detector.module_geometry
         number_of_modules = module_geometry.x * module_geometry.y
 
         # Create a TemperatureHandler for each module temperature
-        # sensor and group them under their dictionary key name
-        for key in temperature_dict.keys():
-            # Go from temperature_adc to ADC, for example
-            prefix = key.split("_")[1].upper()
+        # sensor and group them under their list index
+        for temperature_index in temperature_list:
+            # Go from dacIndex.TEMPERATURE_ADC to ADC, for example
+            prefix = str(temperature_index).split("_")[1].upper()
             for module_index in range(number_of_modules):
                 group_name = f"{prefix}Temperatures"
                 self.attributes[f"{group_name}Module{module_index + 1}"] = AttrR(
                     String(),
-                    handler=TemperatureHandler(module_index, key),
+                    handler=TemperatureHandler(module_index, temperature_index),
                     group=group_name,
                 )
 
