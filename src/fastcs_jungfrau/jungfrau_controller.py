@@ -383,3 +383,7 @@ class JungfrauController(Controller):
         # command, clear the acquiring flag in shared
         # memory ready for starting the next acquisition
         self.detector.clearbusy()
+
+    @command(group=ACQUISITION)
+    async def clear_busy_flag(self) -> None:
+        self.detector.clearbusy()
