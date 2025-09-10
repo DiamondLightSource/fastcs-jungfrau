@@ -181,6 +181,18 @@ class PedestalModeHandler(JungfrauHandler):
         pedestal_params.frames = self._controller.pedestal_mode_frames.get()
         pedestal_params.loops = self._controller.pedestal_mode_loops.get()
         pedestal_params.enable = value
+        if value:
+            self._controller.detector.rx_jsonpara["pedestal"] = "true"
+            self._controller.detector.rx_jsonpara["pedestal_frames"] = (
+                pedestal_params.frames
+            )
+            self._controller.detector.rx_jsonpara["pedestal_loops"] = (
+                pedestal_params.loops
+            )
+        else:
+            self._controller.detector.rx_jsonpara["pedestal"] = ""
+            self._controller.detector.rx_jsonpara["pedestal_frames"] = ""
+            self._controller.detector.rx_jsonpara["pedestal_loops"] = ""
         setattr(self.controller.detector, self.command_name, pedestal_params)
 
 
