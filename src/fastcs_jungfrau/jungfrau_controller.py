@@ -353,11 +353,20 @@ class JungfrauController(Controller):
 
     @command(group=ACQUISITION)
     async def acquisition_start(self) -> None:
+        # Start receiver listener for detector data packets
+        # and create a data file (if file write enabled)
+        self.detector.rx_start()
+        # Start detector acquisition. Automatically returns
+        # to idle at the end of acquisition.
         self.detector.start()
 
     @command(group=ACQUISITION)
     async def acquisition_stop(self) -> None:
+        # Abort detector acquisition, stop server
         self.detector.stop()
+        # Stop receiver listener for detector data packets
+        # and close current data file (if file write enabled)
+        self.detector.rx_stop()
         # If acquisition was aborted during the acquire
         # command, clear the acquiring flag in shared
         # memory ready for starting the next acquisition
