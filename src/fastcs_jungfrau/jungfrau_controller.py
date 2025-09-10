@@ -161,9 +161,9 @@ class PedestalParamHandler(JungfrauHandler):
         await self._controller.pedestal_mode_state.process(pedestal_mode_state)
 
 
-class OnOffEnum(enum.StrEnum):
-    Off = "Off"
-    On = "On"
+class OnOffEnum(enum.IntEnum):
+    Off = 0
+    On = 1
 
 
 class PedestalModeHandler(JungfrauHandler):
@@ -180,7 +180,7 @@ class PedestalModeHandler(JungfrauHandler):
 
         pedestal_params.frames = self._controller.pedestal_mode_frames.get()
         pedestal_params.loops = self._controller.pedestal_mode_loops.get()
-        pedestal_params.enable = int(value)
+        pedestal_params.enable = value
         setattr(self.controller.detector, self.command_name, pedestal_params)
 
 
