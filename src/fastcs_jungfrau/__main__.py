@@ -5,13 +5,12 @@ from typing import Optional
 
 import typer
 from fastcs.launch import FastCS
-from fastcs.transport.epics.ca.options import EpicsCAOptions
+from fastcs.transport.epics.ca.transport import EpicsCATransport
 from fastcs.transport.epics.options import (
     EpicsGUIOptions,
     EpicsIOCOptions,
 )
 
-# from slsdet import Jungfrau
 from fastcs_jungfrau import __version__
 from fastcs_jungfrau.jungfrau_controller import JungfrauController
 
@@ -54,7 +53,7 @@ def ioc(
     controller = JungfrauController(config_file_path=config)
 
     # ...some IOC options...
-    options = EpicsCAOptions(
+    options = EpicsCATransport(
         ca_ioc=EpicsIOCOptions(pv_prefix=pv_prefix),
         gui=EpicsGUIOptions(
             output_path=ui_path / "jungfrau.bob", title=f"Jungfrau - {pv_prefix}"
