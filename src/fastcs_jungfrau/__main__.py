@@ -62,8 +62,6 @@ def ioc(
 
     # ...and pass them both to FastCS
     launcher = FastCS(controller, [options])
-    launcher.create_docs()
-    launcher.create_gui()
     launcher.run()
 
 
