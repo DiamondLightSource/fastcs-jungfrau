@@ -54,7 +54,7 @@ def ioc(
 
     # ...some IOC options...
     options = EpicsCATransport(
-        ca_ioc=EpicsIOCOptions(pv_prefix=pv_prefix),
+        epicsca=EpicsIOCOptions(pv_prefix=pv_prefix),
         gui=EpicsGUIOptions(
             output_path=ui_path / "jungfrau.bob", title=f"Jungfrau - {pv_prefix}"
         ),
