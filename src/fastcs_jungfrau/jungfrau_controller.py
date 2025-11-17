@@ -259,10 +259,15 @@ class JungfrauController(Controller):
             prefix = str(temperature_index).split("_")[1].upper()
             for module_index in range(number_of_modules):
                 group_name = f"{prefix}Temperatures"
-                self.attributes[f"{group_name}Module{module_index + 1}"] = AttrR(
-                    Int(units="\u00b0C"),
-                    io_ref=TemperatureAttributeIORef(module_index, temperature_index),
-                    group=group_name,
+                self.add_attribute(
+                    f"{group_name}Module{module_index + 1}",
+                    AttrR(
+                        Int(units="\u00b0C"),
+                        io_ref=TemperatureAttributeIORef(
+                            module_index, temperature_index
+                        ),
+                        group=group_name,
+                    ),
                 )
 
     # Once initialisation is complete, fetch the module and detector geometry
