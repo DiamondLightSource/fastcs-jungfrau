@@ -13,7 +13,7 @@ from fastcs_jungfrau.io.jungfrau_attribute_io import (
     JungfrauAttributeIORef,
 )
 from fastcs_jungfrau.io.pedestal_mode_attribute_io import (
-    OnOffEnum,
+    PedestalModeAttributeIO,
     PedestalModeAttributeIORef,
 )
 from fastcs_jungfrau.io.pedestal_param_attribute_io import (
@@ -25,6 +25,7 @@ from fastcs_jungfrau.io.temp_event_read_attribute_io import (
     TempEventReadAttributeIORef,
 )
 from fastcs_jungfrau.io.temperature_attribute_io import (
+    TemperatureAttributeIO,
     TemperatureAttributeIORef,
 )
 
@@ -89,6 +90,11 @@ GAIN_MODE_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
         GainMode.FixG0: Gain.FIX_G0,  # type: ignore
     }
 )
+
+
+class OnOffEnum(enum.IntEnum):
+    Off = 0
+    On = 1
 
 
 class JungfrauController(Controller):
@@ -183,7 +189,9 @@ class JungfrauController(Controller):
         Bool(), io_ref=JungfrauAttributeIORef("powerchip"), group=POWER
     )
     pedestal_mode_frames = AttrRW(
-        Int(), io_ref=PedestalParamAttributeIORef(), group=PEDESTAL_MODE
+        Int(),
+        io_ref=PedestalParamAttributeIORef(),
+        group=PEDESTAL_MODE,
     )
     pedestal_mode_loops = AttrRW(
         Int(), io_ref=PedestalParamAttributeIORef(), group=PEDESTAL_MODE
@@ -210,18 +218,35 @@ class JungfrauController(Controller):
         self.detector = Jungfrau()
         self.detector.config = config_file_path
 
+        # Define pedestal mode attribute IO separately so the pedestal
+        # frames and loops can be set after init where attributes are
+        # deep copied and re-assigned to self to make them unique across
+        # multiple instances of the controller class.  By re-setting them
+        # after init the attributes will be accessible from inside the
+        # PedestalModeAttributeIO class
+        self.pedestal_mode_attribute_io = PedestalModeAttributeIO(
+            self.detector, self.pedestal_mode_frames, self.pedestal_mode_loops
+        )
+
         super().__init__(
             ios=[
                 JungfrauAttributeIO(self.detector),
+                self.pedestal_mode_attribute_io,
                 PedestalParamAttributeIO(self.detector, self.pedestal_mode),
                 TempEventReadAttributeIO(self.detector),
                 EnumAttributeIO(self.detector),
+                TemperatureAttributeIO(self.detector),
             ]
         )
 
     async def initialise(self):
         # Get the list of temperatures
         temperature_list = self.detector.getTemperatureList()
+
+        # Set the frames and loops after init attributes so they will be
+        # accessible from inside the PedestalModeAttributeIO class
+        self.pedestal_mode_attribute_io.pedestal_frames = self.pedestal_mode_frames
+        self.pedestal_mode_attribute_io.pedestal_loops = self.pedestal_mode_loops
 
         # Determine the number of modules
         module_geometry = self.detector.module_geometry
