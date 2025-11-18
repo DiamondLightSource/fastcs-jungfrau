@@ -5,6 +5,7 @@ from typing import Optional
 
 import typer
 from fastcs.launch import FastCS
+from fastcs.logging import LogLevel, configure_logging
 from fastcs.transport.epics.ca.transport import EpicsCATransport
 from fastcs.transport.epics.options import (
     EpicsGUIOptions,
@@ -47,6 +48,9 @@ def ioc(
     pv_prefix: str = typer.Argument(),
     config: str = typer.Option(help="Path to the config file"),
 ):
+    # Configure logging
+    configure_logging(LogLevel.TRACE)
+
     ui_path = OPI_PATH if OPI_PATH.is_dir() else Path.cwd()
 
     # Create a controller instance...

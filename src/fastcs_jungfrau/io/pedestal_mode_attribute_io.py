@@ -6,7 +6,10 @@ from fastcs.attribute_io import AttributeIO
 from fastcs.attribute_io_ref import AttributeIORef
 from fastcs.attributes import AttrR, AttrRW, AttrW
 from fastcs.datatypes import T
+from fastcs.logging import bind_logger
 from slsdet import Jungfrau, pedestalParameters
+
+logger = bind_logger(__name__)
 
 
 class OnOffEnum(enum.IntEnum):

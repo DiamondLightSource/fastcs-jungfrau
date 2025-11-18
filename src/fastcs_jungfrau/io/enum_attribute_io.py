@@ -5,7 +5,10 @@ from bidict import bidict
 from fastcs.attribute_io import AttributeIO
 from fastcs.attribute_io_ref import AttributeIORef
 from fastcs.attributes import AttrR, AttrW
+from fastcs.logging import bind_logger
 from slsdet import Jungfrau
+
+logger = bind_logger(__name__)
 
 """Handler for AttrRW using enums, to allow us to map slsdet enums to our own enums.
 

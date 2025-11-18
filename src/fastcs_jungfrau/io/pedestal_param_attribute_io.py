@@ -5,7 +5,10 @@ from fastcs.attribute_io import AttributeIO
 from fastcs.attribute_io_ref import AttributeIORef
 from fastcs.attributes import AttrRW, AttrW
 from fastcs.datatypes import T
+from fastcs.logging import bind_logger
 from slsdet import Jungfrau
+
+logger = bind_logger(__name__)
 
 
 @dataclass
