@@ -16,7 +16,7 @@ class OnOffEnum(enum.IntEnum):
 
 @dataclass
 class PedestalModeAttributeIORef(AttributeIORef):
-    pass
+    update_period: float | None = 0.2
 
 
 class PedestalModeAttributeIO(AttributeIO[T, PedestalModeAttributeIORef]):

@@ -9,7 +9,7 @@ from slsdet import Jungfrau
 
 @dataclass
 class TempEventReadAttributeIORef(AttributeIORef):
-    pass
+    update_period: float | None = 1.0
 
 
 class TempEventReadAttributeIO(AttributeIO[T, TempEventReadAttributeIORef]):

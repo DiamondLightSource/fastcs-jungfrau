@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 
 from fastcs.attribute_io import AttributeIO
 from fastcs.attribute_io_ref import AttributeIORef
@@ -11,6 +11,8 @@ from slsdet import Jungfrau
 class TemperatureAttributeIORef(AttributeIORef):
     module_index: int
     temperature_index: int
+    _: KW_ONLY
+    update_period: float | None = 1.0
 
 
 class TemperatureAttributeIO(AttributeIO[T, TemperatureAttributeIORef]):
