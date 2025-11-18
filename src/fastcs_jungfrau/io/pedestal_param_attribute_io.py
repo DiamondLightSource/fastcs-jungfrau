@@ -22,7 +22,7 @@ class PedestalParamAttributeIO(AttributeIO[T, PedestalParamAttributeIORef]):
         self.pedestal_mode = pedestal_mode
         super().__init__()
 
-    async def send(self, attr: AttrW, value: Any):
+    async def send(self, attr: AttrW[T, PedestalParamAttributeIORef], value: Any):
         # Update the GUI
         if isinstance(attr, AttrRW):
             await attr.update(value)
