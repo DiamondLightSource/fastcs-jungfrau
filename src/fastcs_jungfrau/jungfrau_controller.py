@@ -218,21 +218,25 @@ class JungfrauController(Controller):
         self.detector = Jungfrau()
         self.detector.config = config_file_path
 
-        # Define pedestal mode attribute IO separately so the pedestal
-        # frames and loops can be set after init where attributes are
-        # deep copied and re-assigned to self to make them unique across
-        # multiple instances of the controller class.  By re-setting them
-        # after init the attributes will be accessible from inside the
-        # PedestalModeAttributeIO class
+        # Define pedestal mode and param attribute IOs separately so the
+        # pedestal mode, frames, and loops can be set after init where
+        # attributes are deep copied and re-assigned to self to make them
+        # unique across multiple instances of the controller class.  By
+        # re-setting them after init the attributes will be accessible
+        # from inside the PedestalMode and PedestalParam AttributeIO classes
         self.pedestal_mode_attribute_io = PedestalModeAttributeIO(
             self.detector, self.pedestal_mode_frames, self.pedestal_mode_loops
+        )
+
+        self.pedestal_param_attribute_io = PedestalParamAttributeIO(
+            self.detector, self.pedestal_mode
         )
 
         super().__init__(
             ios=[
                 JungfrauAttributeIO(self.detector),
                 self.pedestal_mode_attribute_io,
-                PedestalParamAttributeIO(self.detector, self.pedestal_mode),
+                self.pedestal_param_attribute_io,
                 TempEventReadAttributeIO(self.detector),
                 EnumAttributeIO(self.detector),
                 TemperatureAttributeIO(self.detector),
@@ -243,8 +247,9 @@ class JungfrauController(Controller):
         # Get the list of temperatures
         temperature_list = self.detector.getTemperatureList()
 
-        # Set the frames and loops after init attributes so they will be
-        # accessible from inside the PedestalModeAttributeIO class
+        # Set the mode, frames, and loops after init attributes so they
+        # will be accessible from inside the PedestalModeAttributeIO class
+        self.pedestal_param_attribute_io.pedestal_mode = self.pedestal_mode
         self.pedestal_mode_attribute_io.pedestal_frames = self.pedestal_mode_frames
         self.pedestal_mode_attribute_io.pedestal_loops = self.pedestal_mode_loops
 
