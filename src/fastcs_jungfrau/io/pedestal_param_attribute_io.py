@@ -28,5 +28,4 @@ class PedestalParamAttributeIO(AttributeIO[T, PedestalParamAttributeIORef]):
             await attr.update(value)
         # Trigger a put of the current pedestal mode so that the frames and
         # loops parameters are updated even if the mode is currently enabled
-        pedestal_mode_state = self.pedestal_mode.get()
-        await self.detector.pedestalmode_state.put(pedestal_mode_state)
+        await self.pedestal_mode.put(self.pedestal_mode.get())
