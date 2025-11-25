@@ -6,11 +6,11 @@ from typing import Optional
 import typer
 from fastcs.launch import FastCS
 from fastcs.logging import LogLevel, configure_logging
-from fastcs.transport.epics.ca.transport import EpicsCATransport
-from fastcs.transport.epics.options import (
+from fastcs.transports.epics import (
     EpicsGUIOptions,
     EpicsIOCOptions,
 )
+from fastcs.transports.epics.ca import EpicsCATransport
 
 from fastcs_jungfrau import __version__
 from fastcs_jungfrau.jungfrau_controller import JungfrauController

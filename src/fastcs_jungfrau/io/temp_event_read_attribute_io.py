@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 
-from fastcs.attribute_io import AttributeIO
-from fastcs.attribute_io_ref import AttributeIORef
-from fastcs.attributes import AttrR
-from fastcs.datatypes import T
+from fastcs.attributes import AttributeIO, AttributeIORef, AttrR
+from fastcs.datatypes import DType_T
 from fastcs.logging import bind_logger
 from slsdet import Jungfrau
 
@@ -15,12 +13,12 @@ class TempEventReadAttributeIORef(AttributeIORef):
     update_period: float | None = 1.0
 
 
-class TempEventReadAttributeIO(AttributeIO[T, TempEventReadAttributeIORef]):
+class TempEventReadAttributeIO(AttributeIO[DType_T, TempEventReadAttributeIORef]):
     def __init__(self, detector: Jungfrau):
         self.detector = detector
 
         super().__init__()
 
-    async def update(self, attr: AttrR[T, TempEventReadAttributeIORef]):
+    async def update(self, attr: AttrR[DType_T, TempEventReadAttributeIORef]):
         temp_event = self.detector.temp_event
         await attr.update(temp_event)

@@ -1,9 +1,7 @@
 from dataclasses import KW_ONLY, dataclass
 
-from fastcs.attribute_io import AttributeIO
-from fastcs.attribute_io_ref import AttributeIORef
-from fastcs.attributes import AttrR
-from fastcs.datatypes import T
+from fastcs.attributes import AttributeIO, AttributeIORef, AttrR
+from fastcs.datatypes import DType_T
 from fastcs.logging import bind_logger
 from slsdet import Jungfrau
 
@@ -18,13 +16,13 @@ class TemperatureAttributeIORef(AttributeIORef):
     update_period: float | None = 1.0
 
 
-class TemperatureAttributeIO(AttributeIO[T, TemperatureAttributeIORef]):
+class TemperatureAttributeIO(AttributeIO[DType_T, TemperatureAttributeIORef]):
     def __init__(self, detector: Jungfrau):
         self.detector = detector
 
         super().__init__()
 
-    async def update(self, attr: AttrR[T, TemperatureAttributeIORef]):
+    async def update(self, attr: AttrR[DType_T, TemperatureAttributeIORef]):
         temperature = self.detector.getTemperature(attr.io_ref.temperature_index)[
             attr.io_ref.module_index
         ]

@@ -2,10 +2,8 @@ import enum
 from dataclasses import dataclass
 from typing import Any
 
-from fastcs.attribute_io import AttributeIO
-from fastcs.attribute_io_ref import AttributeIORef
-from fastcs.attributes import AttrR, AttrRW, AttrW
-from fastcs.datatypes import T
+from fastcs.attributes import AttributeIO, AttributeIORef, AttrR, AttrRW, AttrW
+from fastcs.datatypes import DType_T
 from fastcs.logging import bind_logger
 from slsdet import Jungfrau, pedestalParameters
 
@@ -22,7 +20,7 @@ class PedestalModeAttributeIORef(AttributeIORef):
     update_period: float | None = 0.2
 
 
-class PedestalModeAttributeIO(AttributeIO[T, PedestalModeAttributeIORef]):
+class PedestalModeAttributeIO(AttributeIO[DType_T, PedestalModeAttributeIORef]):
     def __init__(
         self, detector: Jungfrau, pedestal_frames: AttrRW, pedestal_loops: AttrRW
     ):

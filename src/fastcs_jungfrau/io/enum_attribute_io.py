@@ -2,9 +2,7 @@ import enum
 from dataclasses import KW_ONLY, dataclass
 
 from bidict import bidict
-from fastcs.attribute_io import AttributeIO
-from fastcs.attribute_io_ref import AttributeIORef
-from fastcs.attributes import AttrR, AttrW
+from fastcs.attributes import AttributeIO, AttributeIORef, AttrR, AttrW
 from fastcs.logging import bind_logger
 from slsdet import Jungfrau
 

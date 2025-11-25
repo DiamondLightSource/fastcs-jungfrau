@@ -1,10 +1,8 @@
 from dataclasses import KW_ONLY, dataclass
 from typing import Any
 
-from fastcs.attribute_io import AttributeIO
-from fastcs.attribute_io_ref import AttributeIORef
-from fastcs.attributes import AttrR, AttrW
-from fastcs.datatypes import T
+from fastcs.attributes import AttributeIO, AttributeIORef, AttrR, AttrW
+from fastcs.datatypes import DType_T
 from fastcs.logging import bind_logger
 from slsdet import Jungfrau
 
@@ -18,13 +16,13 @@ class JungfrauAttributeIORef(AttributeIORef):
     update_period: float | None = 0.2
 
 
-class JungfrauAttributeIO(AttributeIO[T, JungfrauAttributeIORef]):
+class JungfrauAttributeIO(AttributeIO[DType_T, JungfrauAttributeIORef]):
     def __init__(self, detector: Jungfrau):
         self.detector = detector
         super().__init__()
 
-    async def update(self, attr: AttrR[T, JungfrauAttributeIORef]):
+    async def update(self, attr: AttrR[DType_T, JungfrauAttributeIORef]):
         await attr.update(getattr(self.detector, attr.io_ref.command_name))
 
-    async def send(self, attr: AttrW[T, JungfrauAttributeIORef], value: Any):
+    async def send(self, attr: AttrW[DType_T, JungfrauAttributeIORef], value: Any):
         setattr(self.detector, attr.io_ref.command_name, value)

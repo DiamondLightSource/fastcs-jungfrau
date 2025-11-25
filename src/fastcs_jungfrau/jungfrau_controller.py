@@ -2,9 +2,9 @@ import enum
 
 from bidict import bidict
 from fastcs.attributes import AttrR, AttrRW
-from fastcs.controller import Controller
+from fastcs.controllers.controller import Controller
 from fastcs.datatypes import Bool, Enum, Float, Int, String
-from fastcs.wrappers import command, scan
+from fastcs.methods import command, scan
 from slsdet import Jungfrau, defs
 
 from fastcs_jungfrau.io.enum_attribute_io import EnumAttributeIO, EnumAttributeIORef

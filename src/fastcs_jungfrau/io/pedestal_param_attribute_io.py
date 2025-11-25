@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
-from fastcs.attribute_io import AttributeIO
-from fastcs.attribute_io_ref import AttributeIORef
-from fastcs.attributes import AttrRW, AttrW
-from fastcs.datatypes import T
+from fastcs.attributes import AttributeIO, AttributeIORef, AttrRW, AttrW
+from fastcs.datatypes import DType_T
 from fastcs.logging import bind_logger
 from slsdet import Jungfrau
 
@@ -16,13 +14,13 @@ class PedestalParamAttributeIORef(AttributeIORef):
     pass
 
 
-class PedestalParamAttributeIO(AttributeIO[T, PedestalParamAttributeIORef]):
+class PedestalParamAttributeIO(AttributeIO[DType_T, PedestalParamAttributeIORef]):
     def __init__(self, detector: Jungfrau, pedestal_mode: AttrRW):
         self.detector = detector
         self.pedestal_mode = pedestal_mode
         super().__init__()
 
-    async def send(self, attr: AttrW[T, PedestalParamAttributeIORef], value: Any):
+    async def send(self, attr: AttrW[DType_T, PedestalParamAttributeIORef], value: Any):
         # Update the GUI
         if isinstance(attr, AttrRW):
             await attr.update(value)
