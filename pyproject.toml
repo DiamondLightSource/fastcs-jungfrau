@@ -11,7 +11,12 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 description = "Jungfrau control system integration with FastCS"
-dependencies = ["fastcs~=0.10.1", "slsDet==9.2.0", "bidict==0.23.1"]
+dependencies = [
+    "fastcs[epicsca]",
+    "slsDet==9.2.0",
+    "bidict==0.23.1",
+    "fastcs-odin~=0.8.0",
+]
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
