@@ -10,6 +10,7 @@ from fastcs.transport.epics.options import (
     EpicsGUIOptions,
     EpicsIOCOptions,
 )
+from softioc import device
 
 # from slsdet import Jungfrau
 from fastcs_jungfrau import __version__
@@ -48,6 +49,15 @@ def ioc(
     pv_prefix: str = typer.Argument(),
     config: str = typer.Option(help="Path to the config file"),
 ):
+    # fastcs does not pass blocking=True when it builds records for AttrW/AttrRW,
+    # only for commands, so a caput to a setting completes as soon as the record
+    # processes - before the handler has written to the detector. A client that
+    # writes settings and then triggers a command can have the command reach the
+    # detector first. Set softioc's global default so the write records are
+    # created with PACT set and the put callback waits for the handler.
+    # Must happen before any record is created. Fixed upstream in fastcs 0.12.
+    device.SetBlocking(True)
+
     ui_path = OPI_PATH if OPI_PATH.is_dir() else Path.cwd()
 
     # Create a controller instance...
