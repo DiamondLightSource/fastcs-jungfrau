@@ -196,6 +196,31 @@ class PedestalModeHandler(JungfrauHandler):
         setattr(self.controller.detector, self.command_name, pedestal_params)
 
 
+class RawModeHandler(JungfrauHandler):
+    """Handler that adds or removes the "raw" field in the receiver JSON header.
+
+    The receiver does not report the custom parameters back, so there is
+    nothing to update from; the attribute value is simply echoed back so that
+    the GUI reflects what was last written.
+
+    """
+
+    def __init__(self, command_name: str):
+        super().__init__(command_name, update_period=None)
+
+    async def update(self, attr: AttrR):
+        pass
+
+    async def put(self, attr: AttrW, value: Any):
+        # An empty string removes the field from the JSON header
+        self.controller.detector.rx_jsonpara[self.command_name] = (
+            "true" if value else ""
+        )
+        # Update the GUI
+        if isinstance(attr, AttrRW):
+            await attr.set(value)
+
+
 class TemperatureHandler(JungfrauHandler):
     def __init__(self, module_index: int, temperature_index: str):
         self.module_index = module_index
@@ -222,6 +247,7 @@ class JungfrauController(Controller):
     HARDWARE_DETAILS = "HardwareDetails"
     SOFTWARE_DETAILS = "SoftwareDetails"
     PEDESTAL_MODE = "PedestalMode"
+    JSON_HEADER = "JsonHeader"
     ACQUISITION = "Acquisition"
     TEMPERATURE = "Temperature"
     STATUS = "Status"
@@ -303,6 +329,11 @@ class JungfrauController(Controller):
         Enum(OnOffEnum),
         handler=PedestalModeHandler("pedestalmode"),
         group=PEDESTAL_MODE,
+    )
+    raw_mode_state = AttrRW(
+        Enum(OnOffEnum),
+        handler=RawModeHandler("raw"),
+        group=JSON_HEADER,
     )
     trigger_mode = AttrRW(
         Enum(TriggerMode),
