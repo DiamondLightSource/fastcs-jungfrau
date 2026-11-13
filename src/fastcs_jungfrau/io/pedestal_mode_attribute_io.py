@@ -4,10 +4,8 @@ from typing import Any
 
 from fastcs.attributes import AttributeIO, AttributeIORef, AttrR, AttrRW, AttrW
 from fastcs.datatypes import DType_T
-from fastcs.logging import bind_logger
+from fastcs.logging import logger
 from slsdet import Jungfrau, pedestalParameters
-
-logger = bind_logger(__name__)
 
 
 class OnOffEnum(enum.IntEnum):
@@ -40,6 +38,14 @@ class PedestalModeAttributeIO(AttributeIO[DType_T, PedestalModeAttributeIORef]):
 
         pedestal_params.frames = self.pedestal_frames.get()
         pedestal_params.loops = self.pedestal_loops.get()
+        logger.info(
+            "send",
+            frames_id=id(self.pedestal_frames),
+            frames=self.pedestal_frames.get(),
+            loops_id=id(self.pedestal_loops),
+            loops=self.pedestal_loops.get(),
+        )
+
         pedestal_params.enable = value
         if value:
             self.detector.rx_jsonpara["pedestal"] = "true"

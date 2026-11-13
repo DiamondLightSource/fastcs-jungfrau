@@ -3,10 +3,7 @@ from dataclasses import KW_ONLY, dataclass
 
 from bidict import bidict
 from fastcs.attributes import AttributeIO, AttributeIORef, AttrR, AttrW
-from fastcs.logging import bind_logger
 from slsdet import Jungfrau
-
-logger = bind_logger(__name__)
 
 """Handler for AttrRW using enums, to allow us to map slsdet enums to our own enums.
 

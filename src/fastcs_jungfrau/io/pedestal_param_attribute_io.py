@@ -3,10 +3,7 @@ from typing import Any
 
 from fastcs.attributes import AttributeIO, AttributeIORef, AttrRW, AttrW
 from fastcs.datatypes import DType_T
-from fastcs.logging import bind_logger
 from slsdet import Jungfrau
-
-logger = bind_logger(__name__)
 
 
 @dataclass

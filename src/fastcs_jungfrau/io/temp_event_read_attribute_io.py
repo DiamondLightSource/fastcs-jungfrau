@@ -2,10 +2,7 @@ from dataclasses import dataclass
 
 from fastcs.attributes import AttributeIO, AttributeIORef, AttrR
 from fastcs.datatypes import DType_T
-from fastcs.logging import bind_logger
 from slsdet import Jungfrau
-
-logger = bind_logger(__name__)
 
 
 @dataclass
