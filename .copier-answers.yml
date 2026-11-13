@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: 2.6.0
+_commit: 5.0.2
 _src_path: gh:DiamondLightSource/python-copier-template
 author_email: James.OHea@diamond.ac.uk
 author_name: James OHea
@@ -9,10 +9,12 @@ component_type: service
 description: Jungfrau control system integration with FastCS
 distribution_name: fastcs-jungfrau
 docker: true
+docker_debug: true
 docs_type: README
 git_platform: github.com
 github_org: DiamondLightSource
 package_name: fastcs_jungfrau
 pypi: true
 repo_name: fastcs-jungfrau
+strict_typing: false
 type_checker: pyright
