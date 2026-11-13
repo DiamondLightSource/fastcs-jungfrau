@@ -1,8 +1,9 @@
 import enum
+from dataclasses import dataclass
 
 from bidict import bidict
 from fastcs.attributes import AttrR, AttrRW
-from fastcs.controllers.controller import Controller
+from fastcs.controllers import Controller
 from fastcs.datatypes import Bool, Enum, Float, Int, String
 from fastcs.methods import command, scan
 from slsdet import Jungfrau, defs
@@ -95,6 +96,11 @@ GAIN_MODE_MAPPING: bidict[enum.StrEnum, enum.IntEnum] = bidict(
 class OnOffEnum(enum.IntEnum):
     Off = 0
     On = 1
+
+
+@dataclass
+class JungfrauControllerSettings:
+    config_file_path: str
 
 
 class JungfrauController(Controller):
@@ -212,11 +218,11 @@ class JungfrauController(Controller):
         group=ACQUISITION,
     )
 
-    def __init__(self, config_file_path) -> None:
+    def __init__(self, settings: JungfrauControllerSettings) -> None:
         # Create a Jungfrau detector object
         # and initialise it with a config file
         self.detector = Jungfrau()
-        self.detector.config = config_file_path
+        self.detector.config = settings.config_file_path
 
         # Define pedestal mode and param attribute IOs separately so the
         # pedestal mode, frames, and loops can be set after init where
