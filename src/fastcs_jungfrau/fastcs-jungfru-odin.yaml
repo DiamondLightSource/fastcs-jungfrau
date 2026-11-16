@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=schema.json
+controllers:
+  - id: LAB29-JUNGFRAU
+    type: fastcs_jungfrau.JungfrauOdinController
+    config_file_path: /workspaces/jungfrau_2_modules.config
+    odin_connection_settings:
+      ip: "localhost"
+      port: 8888
+transport:
+  - epicsca: {}
+    gui:
+      title: "Jungfrau - JUNGFRAU"
+      output_dir: ./opi/

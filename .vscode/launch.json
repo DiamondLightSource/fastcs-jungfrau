@@ -12,10 +12,20 @@
             "justMyCode": false,
             "console": "integratedTerminal",
             "args": [
-                "ioc",
-                "LAB29-JUNGFRAU",
-                "--config",
-                "/workspaces/jungfrau_2_modules.config",
+                "run",
+                "${workspaceFolder:fastcs-jungfrau}/src/fastcs_jungfrau/fastcs-jungfrau.yaml",
+            ]
+        },
+        {
+            "name": "Jungfrau Odin IOC",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "fastcs_jungfrau",
+            "justMyCode": false,
+            "console": "integratedTerminal",
+            "args": [
+                "run",
+                "${workspaceFolder:fastcs-jungfrau}/src/fastcs_jungfrau/fastcs-jungfrau-odin.yaml",
             ]
         },
         {

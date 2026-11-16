@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=schema.json
+controllers:
+  - id: LAB29-JUNGFRAU
+    type: fastcs_jungfrau.JungfrauController
+    config_file_path: /workspaces/jungfrau_2_modules.config
+transport:
+  - epicsca: {}
+    gui:
+      title: "Jungfrau - JUNGFRAU"
+      output_dir: ./opi/
