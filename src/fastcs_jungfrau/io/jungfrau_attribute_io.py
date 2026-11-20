@@ -26,3 +26,5 @@ class JungfrauAttributeIO(AttributeIO[DType_T, JungfrauAttributeIORef]):
 
     async def send(self, attr: AttrW[DType_T, JungfrauAttributeIORef], value: Any):
         setattr(self.detector, attr.io_ref.register, value)
+        if isinstance(attr, AttrR):
+            await self.update(attr)
