@@ -287,14 +287,21 @@ class JungfrauController(Controller):
 
     # Once initialisation is complete, fetch the module and detector geometry
     async def connect(self):
-        detector_size = self.detector.detsize
-        module_size = self.detector.module_size
-        module_geometry = self.detector.module_geometry
-        await self.detector_size.update(f"{detector_size.x} by {detector_size.y}")
-        await self.module_geometry.update(
-            f"{module_geometry.x} wide by {module_geometry.y} high"
-        )
-        await self.module_size.update(f"{module_size[0]} by {module_size[1]}")
+        try:
+            detector_size = self.detector.detsize
+            module_size = self.detector.module_size
+            module_geometry = self.detector.module_geometry
+            await self.detector_size.update(f"{detector_size.x} by {detector_size.y}")
+            await self.module_geometry.update(
+                f"{module_geometry.x} wide by {module_geometry.y} high"
+            )
+            await self.module_size.update(f"{module_size[0]} by {module_size[1]}")
+
+            self._connected = True
+
+        except Exception:
+            self._connected = False
+            raise
 
     @command(group=TEMPERATURE)
     async def over_heat_reset(self) -> None:
