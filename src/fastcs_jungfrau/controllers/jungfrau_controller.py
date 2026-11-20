@@ -21,6 +21,10 @@ from fastcs_jungfrau.io.pedestal_param_attribute_io import (
     PedestalParamAttributeIO,
     PedestalParamAttributeIORef,
 )
+from fastcs_jungfrau.io.static_attribute_io import (
+    JungfrauStaticIO,
+    JungfrauStaticIORef,
+)
 from fastcs_jungfrau.io.temp_event_read_attribute_io import (
     TempEventReadAttributeIO,
     TempEventReadAttributeIORef,
@@ -122,28 +126,27 @@ class JungfrauController(Controller):
 
     firmware_version = AttrR(
         String(),
-        io_ref=JungfrauAttributeIORef("firmwareversion"),
+        io_ref=JungfrauStaticIORef("firmwareversion"),
         group=SOFTWARE_DETAILS,
     )
     detector_server_version = AttrR(
         String(),
-        io_ref=JungfrauAttributeIORef("detectorserverversion"),
+        io_ref=JungfrauStaticIORef("detectorserverversion"),
         group=SOFTWARE_DETAILS,
     )
-    # Read Only Attributes
     hardware_version = AttrR(
         String(),
-        io_ref=JungfrauAttributeIORef("hardwareversion"),
+        io_ref=JungfrauStaticIORef("hardwareversion"),
         group=HARDWARE_DETAILS,
     )
     kernel_version = AttrR(
-        String(), io_ref=JungfrauAttributeIORef("kernelversion"), group=SOFTWARE_DETAILS
+        String(), io_ref=JungfrauStaticIORef("kernelversion"), group=SOFTWARE_DETAILS
     )
     client_version = AttrR(
-        String(), io_ref=JungfrauAttributeIORef("clientversion"), group=SOFTWARE_DETAILS
+        String(), io_ref=JungfrauStaticIORef("clientversion"), group=SOFTWARE_DETAILS
     )
     receiver_version = AttrR(
-        String(), io_ref=JungfrauAttributeIORef("rx_version"), group=SOFTWARE_DETAILS
+        String(), io_ref=JungfrauStaticIORef("rx_version"), group=SOFTWARE_DETAILS
     )
     frames_left = AttrR(
         String(), io_ref=JungfrauAttributeIORef("framesl"), group=STATUS
@@ -240,6 +243,7 @@ class JungfrauController(Controller):
 
         super().__init__(
             ios=[
+                JungfrauStaticIO(self.detector),
                 JungfrauAttributeIO(self.detector),
                 self.pedestal_mode_attribute_io,
                 self.pedestal_param_attribute_io,
