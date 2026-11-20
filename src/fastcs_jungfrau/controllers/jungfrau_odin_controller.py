@@ -20,7 +20,7 @@ class JungfrauOdinController(JungfrauController):
     """Jungfrau controller with Odin sub controller"""
 
     def __init__(self, settings: JungfrauOdinControllerSettings) -> None:
-        super().__init__(settings)
+        super().__init__(JungfrauControllerSettings(settings.config_file_path))
 
         self.OD = OdinController(
             OdinControllerSettings(
