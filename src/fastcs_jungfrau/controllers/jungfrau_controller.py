@@ -1,13 +1,17 @@
 import enum
+import os
+import tempfile
 from dataclasses import dataclass
 
 from bidict import bidict
 from fastcs.attributes import AttrR, AttrRW
 from fastcs.controllers import Controller
 from fastcs.datatypes import Bool, Enum, Float, Int, String
+from fastcs.logging import logger
 from fastcs.methods import command, scan
 from slsdet import Jungfrau, defs
 
+from fastcs_jungfrau.config_splitter import split_config
 from fastcs_jungfrau.io.enum_attribute_io import EnumAttributeIO, EnumAttributeIORef
 from fastcs_jungfrau.io.jungfrau_attribute_io import (
     JungfrauAttributeIO,
@@ -159,6 +163,7 @@ class JungfrauController(Controller):
         io_ref=EnumAttributeIORef(DETECTOR_STATUS_MAPPING, DetectorStatus, "status"),
         group=STATUS,
     )
+    receiver_connected = AttrR(Bool(), group=STATUS)
     temperature_over_heat_event = AttrR(
         Bool(), io_ref=TempEventReadAttributeIORef(), group=TEMPERATURE
     )
@@ -222,10 +227,13 @@ class JungfrauController(Controller):
     )
 
     def __init__(self, settings: JungfrauControllerSettings) -> None:
-        # Create a Jungfrau detector object
-        # and initialise it with a config file
+        # Create a Jungfrau detector object. The config file is loaded in
+        # initialise() so that a missing receiver does not prevent the
+        # controller from being constructed
         self.detector = Jungfrau()
-        self.detector.config = settings.config_file_path
+        self._config_file_path = settings.config_file_path
+        self._receiver_lines: list[str] = []
+        self._receiver_connected = False
 
         # Define pedestal mode and param attribute IOs separately so the
         # pedestal mode, frames, and loops can be set after init where
@@ -254,6 +262,8 @@ class JungfrauController(Controller):
         )
 
     async def initialise(self):
+        self._load_config()
+
         # Get the list of temperatures
         temperature_list = self.detector.getTemperatureList()
 
@@ -296,12 +306,86 @@ class JungfrauController(Controller):
                 f"{module_geometry.x} wide by {module_geometry.y} high"
             )
             await self.module_size.update(f"{module_size[0]} by {module_size[1]}")
+            await self.receiver_connected.update(self._receiver_connected)
 
             self._connected = True
 
         except Exception:
             self._connected = False
             raise
+
+    def _load_config(self) -> None:
+        """Load the config file, tolerating an unavailable receiver.
+
+        Detector commands are loaded with ``Jungfrau.config`` (which frees shared
+        memory first) and must succeed. Receiver commands are then loaded
+        separately so that, if the receiver is not running, the detector is still
+        fully configured and the receiver can be connected later.
+        """
+        detector_lines, self._receiver_lines = split_config(self._config_file_path)
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".config", delete=False
+        ) as detector_config:
+            detector_config.write("\n".join(detector_lines) + "\n")
+        try:
+            self.detector.config = detector_config.name
+        finally:
+            os.unlink(detector_config.name)
+
+        if not self._receiver_lines:
+            logger.warning(
+                "No receiver commands found in config file",
+                config_file=self._config_file_path,
+            )
+            return
+
+        self._apply_receiver_config()
+
+    def _apply_receiver_config(self) -> bool:
+        """Apply the receiver commands from the config file.
+
+        Never raises; returns whether the receiver is now connected.
+        """
+        try:
+            self.detector.parameters = self._receiver_lines
+        except RuntimeError as error:
+            logger.warning(
+                "Receiver unavailable, continuing without it", error=str(error)
+            )
+            self._receiver_connected = False
+        else:
+            logger.info("Receiver connected")
+            self._receiver_connected = True
+        return self._receiver_connected
+
+    async def _set_receiver_connected(self, connected: bool) -> None:
+        self._receiver_connected = connected
+        await self.receiver_connected.update(connected)
+
+    async def _on_receiver_connected(self) -> None:
+        await self.receiver_connected.update(True)
+        try:
+            await self.receiver_version.update(self.detector.rx_version)
+        except RuntimeError as error:
+            logger.warning("Failed to read receiver version", error=str(error))
+
+    @command(group=STATUS)
+    async def connect_receiver(self) -> None:
+        """Retry applying the receiver commands from the config file"""
+        if not self._receiver_lines:
+            raise RuntimeError("No receiver commands found in config file")
+        if not self._apply_receiver_config():
+            raise RuntimeError("Failed to connect to receiver")
+        await self._on_receiver_connected()
+
+    @scan(10.0)
+    async def retry_receiver_connection(self) -> None:
+        # Must not raise: an exception in a scan pauses every scan on the controller
+        if self._receiver_connected or not self._receiver_lines:
+            return
+        if self._apply_receiver_config():
+            await self._on_receiver_connected()
 
     @command(group=TEMPERATURE)
     async def over_heat_reset(self) -> None:
@@ -313,9 +397,18 @@ class JungfrauController(Controller):
 
     @command(group=ACQUISITION)
     async def acquisition_start(self) -> None:
+        if not self._receiver_connected:
+            raise RuntimeError(
+                "Cannot start acquisition: receiver not connected. "
+                "Start slsReceiver and run connect_receiver"
+            )
         # Start receiver listener for detector data packets
         # and create a data file (if file write enabled)
-        self.detector.rx_start()
+        try:
+            self.detector.rx_start()
+        except RuntimeError:
+            await self._set_receiver_connected(False)
+            raise
         # Start detector acquisition. Automatically returns
         # to idle at the end of acquisition.
         self.detector.start()
@@ -326,7 +419,12 @@ class JungfrauController(Controller):
         self.detector.stop()
         # Stop receiver listener for detector data packets
         # and close current data file (if file write enabled)
-        self.detector.rx_stop()
+        if self._receiver_connected:
+            try:
+                self.detector.rx_stop()
+            except RuntimeError as error:
+                logger.warning("Failed to stop receiver", error=str(error))
+                await self._set_receiver_connected(False)
         # If acquisition was aborted during the acquire
         # command, clear the acquiring flag in shared
         # memory ready for starting the next acquisition

@@ -47,12 +47,21 @@ class PedestalModeAttributeIO(AttributeIO[DType_T, PedestalModeAttributeIORef]):
         )
 
         pedestal_params.enable = value
-        if value:
-            self.detector.rx_jsonpara["pedestal"] = "true"
-            self.detector.rx_jsonpara["pedestal_frames"] = pedestal_params.frames
-            self.detector.rx_jsonpara["pedestal_loops"] = pedestal_params.loops
-        else:
-            self.detector.rx_jsonpara["pedestal"] = ""
-            self.detector.rx_jsonpara["pedestal_frames"] = ""
-            self.detector.rx_jsonpara["pedestal_loops"] = ""
+        # Update the receiver before the detector. If the receiver is unavailable
+        # this raises before the detector is touched, so the detector is never put
+        # into pedestal mode without the receiver's frame header saying so
+        try:
+            if value:
+                self.detector.rx_jsonpara["pedestal"] = "true"
+                self.detector.rx_jsonpara["pedestal_frames"] = pedestal_params.frames
+                self.detector.rx_jsonpara["pedestal_loops"] = pedestal_params.loops
+            else:
+                self.detector.rx_jsonpara["pedestal"] = ""
+                self.detector.rx_jsonpara["pedestal_frames"] = ""
+                self.detector.rx_jsonpara["pedestal_loops"] = ""
+        except RuntimeError as error:
+            raise RuntimeError(
+                "Cannot set pedestal mode: Failed to update receiver. "
+                "Is slsReceiver running and connected?"
+            ) from error
         self.detector.pedestalmode = pedestal_params
